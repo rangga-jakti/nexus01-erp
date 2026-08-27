@@ -1,0 +1,65 @@
+{% load nexus_tags %}
+{% if stocks %}
+<div class="overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-100">
+        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Produk</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Gudang</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stok</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reserved</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tersedia</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Min Stok</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for s in stocks %}
+      <tr class="hover:bg-gray-50 transition {% if s.quantity <= s.product.minimum_stock %}bg-amber-50/30{% endif %}">
+        <td class="px-5 py-3">
+          <a href="{% url 'inventory:product_detail' s.product.uid %}"
+             class="font-medium text-gray-900 hover:text-nexus-600 transition">{{ s.product.name }}</a>
+          <div class="text-xs font-mono text-gray-400">{{ s.product.sku }}</div>
+        </td>
+        <td class="px-4 py-3 text-xs text-gray-500">
+          {{ s.warehouse.name }}
+          <span class="font-mono text-gray-300">({{ s.warehouse.code }})</span>
+        </td>
+        <td class="px-4 py-3 text-right font-mono font-semibold text-sm {{ s.quantity|stock_color:s.product.minimum_stock }}">
+          {{ s.quantity|floatformat:"-2" }}
+          {% if s.product.unit %}<span class="text-xs font-normal text-gray-400">{{ s.product.unit.symbol|default:s.product.unit.code }}</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right font-mono text-xs text-gray-400">{{ s.reserved_quantity|floatformat:"-2" }}</td>
+        <td class="px-4 py-3 text-right font-mono text-xs font-semibold text-green-600">{{ s.available_quantity|floatformat:"-2" }}</td>
+        <td class="px-4 py-3 text-right font-mono text-xs text-gray-400">{{ s.product.minimum_stock|floatformat:"-2" }}</td>
+        <td class="px-4 py-3 text-right">
+          {% if s.quantity == 0 %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">Kosong</span>
+          {% elif s.quantity <= s.product.minimum_stock %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">⚠ Rendah</span>
+          {% else %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">✓ Aman</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <a href="{% url 'inventory:stock_adjust' s.pk %}"
+             class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Adjust</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if stocks.has_other_pages %}
+<div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+  <span class="text-xs text-gray-400">Hal {{ stocks.number }} / {{ stocks.paginator.num_pages }}</span>
+  <div class="flex gap-1">
+    {% if stocks.has_previous %}<a href="?page={{ stocks.previous_page_number }}&q={{ q }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-left"></i></a>{% endif %}
+    {% if stocks.has_next %}<a href="?page={{ stocks.next_page_number }}&q={{ q }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-right"></i></a>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="py-12 text-center text-sm text-gray-400">Tidak ada data stok yang cocok.</div>
+{% endif %}

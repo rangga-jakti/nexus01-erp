@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────
+# Nexus-01 ERP — Docker Compose
+# Services: db (PostgreSQL 16) + web (Django)
+# ─────────────────────────────────────────────
+
+version: '3.9'
+
+services:
+
+  # ── PostgreSQL Database ──────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: nexus01_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nexus01_db
+      POSTGRES_USER: nexus01_user
+      POSTGRES_PASSWORD: nexus2024_pg!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"   # Port 5433 di host agar tidak bentrok dengan PostgreSQL lokal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus01_user -d nexus01_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Django Web App ───────────────────────────
+  web:
+    build: .
+    container_name: nexus01_web
+    restart: unless-stopped
+    ports:
+      - "8888:8000"
+    environment:
+      # Django
+      SECRET_KEY: nexus-docker-secret-key-change-in-production!
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0
+
+      # Database
+      DB_NAME: nexus01_db
+      DB_USER: nexus01_user
+      DB_PASSWORD: nexus2024_pg!
+      DB_HOST: db
+      DB_PORT: "5432"
+
+      # App
+      COMPANY_NAME: Nexus-01 ERP
+    volumes:
+      - .:/app
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    name: nexus01_postgres_data
+  media_files:
+    name: nexus01_media
+  static_files:
+    name: nexus01_static

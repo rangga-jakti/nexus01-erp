@@ -1,0 +1,161 @@
+{% load nexus_tags %}
+
+{% if products %}
+<div class="overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-gray-100">
+        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Produk</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kategori</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Harga Beli</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Harga Jual</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Stok</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for p in products %}
+      <tr class="hover:bg-gray-50 transition group">
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-nexus-50 transition">
+              {% if p.image %}
+                <img src="{{ p.image.url }}" class="w-9 h-9 rounded-lg object-cover">
+              {% else %}
+                <i class="ti ti-box text-gray-400 group-hover:text-nexus-400 text-sm transition"></i>
+              {% endif %}
+            </div>
+            <div>
+              <a href="{% url 'inventory:product_detail' p.uid %}"
+                 class="font-medium text-gray-900 hover:text-nexus-600 transition">
+                {{ p.name }}
+              </a>
+              <div class="text-xs text-gray-400 font-mono mt-0.5">{{ p.sku }}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3.5 text-gray-500 text-xs">
+          {{ p.category.name|default:"—" }}
+        </td>
+        <td class="px-4 py-3.5">
+          <span class="text-xs px-2 py-0.5 rounded-full border
+            {% if p.product_type == 'STORABLE' %}bg-blue-50 text-blue-700 border-blue-200
+            {% elif p.product_type == 'CONSUMABLE' %}bg-purple-50 text-purple-700 border-purple-200
+            {% else %}bg-gray-50 text-gray-600 border-gray-200{% endif %}">
+            {{ p.get_product_type_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-right font-mono text-xs text-gray-600">
+          {{ p.purchase_price|idr }}
+        </td>
+        <td class="px-4 py-3.5 text-right font-mono text-xs text-gray-600">
+          {{ p.selling_price|idr }}
+        </td>
+        <td class="px-4 py-3.5 text-right">
+          {% with total=p.stock_total %}
+          <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border
+            {{ total|stock_bg:p.minimum_stock }}">
+            {% if total == 0 or total is None %}
+              <i class="ti ti-circle-x text-xs"></i> 0
+            {% elif p.minimum_stock > 0 and total <= p.minimum_stock %}
+              <i class="ti ti-alert-triangle text-xs"></i> {{ total|floatformat:"-2" }}
+            {% else %}
+              {{ total|floatformat:"-2" }}
+            {% endif %}
+            {% if p.unit %}<span class="font-normal opacity-70">{{ p.unit.symbol|default:p.unit.code }}</span>{% endif %}
+          </span>
+          {% endwith %}
+        </td>
+        <td class="px-4 py-3.5">
+          <div class="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition">
+            <a href="{% url 'inventory:product_detail' p.uid %}"
+               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+               title="Detail">
+              <i class="ti ti-eye text-sm"></i>
+            </a>
+            <a href="{% url 'inventory:product_edit' p.uid %}"
+               class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
+               title="Edit">
+              <i class="ti ti-pencil text-sm"></i>
+            </a>
+            <button type="button"
+               onclick="confirmDelete('{% url 'inventory:product_delete' p.uid %}', '{{ p.name }}')"
+               class="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition"
+               title="Hapus">
+              <i class="ti ti-trash text-sm"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if products.has_other_pages %}
+<div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+  <div class="text-xs text-gray-400">
+    Halaman {{ products.number }} dari {{ products.paginator.num_pages }}
+  </div>
+  <div class="flex items-center gap-1">
+    {% if products.has_previous %}
+    <a href="?page={{ products.previous_page_number }}&q={{ q }}&category={{ selected_category }}&type={{ selected_type }}&stock={{ selected_stock }}"
+       class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+      <i class="ti ti-chevron-left"></i>
+    </a>
+    {% endif %}
+    {% for num in products.paginator.page_range %}
+      {% if products.number == num %}
+        <span class="px-3 py-1.5 text-xs bg-nexus-600 text-white rounded-lg">{{ num }}</span>
+      {% elif num > products.number|add:"-3" and num < products.number|add:"3" %}
+        <a href="?page={{ num }}&q={{ q }}"
+           class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 transition">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if products.has_next %}
+    <a href="?page={{ products.next_page_number }}&q={{ q }}&category={{ selected_category }}&type={{ selected_type }}&stock={{ selected_stock }}"
+       class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+      <i class="ti ti-chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="py-16 text-center">
+  <div class="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+    <i class="ti ti-box-off text-gray-300 text-2xl"></i>
+  </div>
+  <h3 class="text-sm font-medium text-gray-900 mb-1">Tidak ada produk</h3>
+  <p class="text-xs text-gray-400 mb-4">
+    {% if q %}Tidak ada produk yang cocok dengan "{{ q }}"{% else %}Belum ada produk ditambahkan.{% endif %}
+  </p>
+  <a href="{% url 'inventory:product_create' %}"
+     class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 text-white text-xs font-medium rounded-lg hover:bg-nexus-700 transition">
+    <i class="ti ti-plus"></i>
+    Tambah Produk Pertama
+  </a>
+</div>
+{% endif %}
+
+<!-- Delete confirm modal -->
+<div id="delete-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+     x-data="{ open: false }" :class="open ? 'flex' : 'hidden'">
+</div>
+
+<script>
+function confirmDelete(url, name) {
+  if (confirm(`Hapus produk "${name}"? Produk akan dinonaktifkan (tidak dihapus permanen).`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrf) form.appendChild(csrf.cloneNode());
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>

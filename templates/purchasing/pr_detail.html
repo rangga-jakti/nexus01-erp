@@ -1,0 +1,227 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Purchasing" "Purchase Request" pr.number %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Main -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Header card -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ pr.number }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if pr.status == 'DRAFT' %}bg-gray-50 text-gray-600 border-gray-200
+              {% elif pr.status == 'PENDING' %}bg-amber-50 text-amber-700 border-amber-200
+              {% elif pr.status == 'APPROVED' %}bg-green-50 text-green-700 border-green-200
+              {% elif pr.status == 'REJECTED' %}bg-red-50 text-red-700 border-red-200
+              {% elif pr.status == 'PO_CREATED' %}bg-blue-50 text-blue-700 border-blue-200
+              {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+              {{ pr.get_status_display }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600">{{ pr.title }}</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <div class="text-xs text-gray-400">Estimasi Total</div>
+          <div class="text-xl font-bold text-gray-900">{{ pr.total_amount|idr }}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100 text-sm">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Dibuat oleh</div>
+          <div class="font-medium text-gray-700">{{ pr.created_by.get_full_name|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Departemen</div>
+          <div class="font-medium text-gray-700">{{ pr.department.name|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Dibutuhkan</div>
+          <div class="font-medium text-gray-700">{{ pr.required_date|date:"d M Y"|default:"—" }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Supplier Saran</div>
+          <div class="font-medium text-gray-700">{{ pr.suggested_supplier.name|default:"—" }}</div>
+        </div>
+      </div>
+
+      {% if pr.notes %}
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <div class="text-xs text-gray-400 mb-1">Catatan</div>
+        <p class="text-sm text-gray-600">{{ pr.notes }}</p>
+      </div>
+      {% endif %}
+
+      {% if pr.rejection_reason %}
+      <div class="mt-4 flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+        <i class="ti ti-circle-x text-red-500 mt-0.5 flex-shrink-0"></i>
+        <div>
+          <div class="text-xs font-semibold text-red-700 mb-0.5">Alasan Penolakan</div>
+          <p class="text-sm text-red-600">{{ pr.rejection_reason }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Items -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Item yang Diminta</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 bg-gray-50">
+            <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Produk / Deskripsi</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Qty</th>
+            <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">Satuan</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Est. Harga</th>
+            <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for item in items %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3">
+              {% if item.product %}
+              <div class="font-medium text-gray-900">{{ item.product.name }}</div>
+              <div class="text-xs font-mono text-gray-400">{{ item.product.sku }}</div>
+              {% else %}
+              <div class="text-gray-700">{{ item.description|default:"—" }}</div>
+              {% endif %}
+              {% if item.notes %}<div class="text-xs text-gray-400 mt-0.5">{{ item.notes }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-mono">{{ item.quantity|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-xs text-gray-400">{{ item.unit.symbol|default:item.unit.code|default:"—" }}</td>
+            <td class="px-4 py-3 text-right text-xs font-mono text-gray-600">{{ item.estimated_price|idr }}</td>
+            <td class="px-5 py-3 text-right font-mono font-semibold text-gray-900">{{ item.subtotal|idr }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-5 py-8 text-center text-sm text-gray-400">Tidak ada item.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-gray-200 bg-gray-50">
+            <td colspan="4" class="px-5 py-3 text-sm font-semibold text-gray-700 text-right">Estimasi Total</td>
+            <td class="px-5 py-3 text-right font-bold text-gray-900">{{ pr.total_amount|idr }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Sidebar actions -->
+  <div class="space-y-4">
+
+    <!-- Workflow timeline -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-4">Alur Dokumen</div>
+      <div class="space-y-3">
+        <!-- Created -->
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-nexus-100">
+            <i class="ti ti-file-plus text-nexus-600 text-xs"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-900">PR Dibuat</div>
+            <div class="text-xs text-gray-400">{{ pr.created_at|date:"d M Y H:i" }}</div>
+          </div>
+        </div>
+        <!-- Submitted -->
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
+            {% if pr.submitted_at %}bg-amber-100{% else %}bg-gray-100{% endif %}">
+            <i class="ti ti-send {% if pr.submitted_at %}text-amber-600{% else %}text-gray-300{% endif %} text-xs"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium {% if pr.submitted_at %}text-gray-900{% else %}text-gray-300{% endif %}">Disubmit</div>
+            {% if pr.submitted_at %}<div class="text-xs text-gray-400">{{ pr.submitted_at|date:"d M Y H:i" }}</div>{% endif %}
+          </div>
+        </div>
+        <!-- Approved/Rejected -->
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
+            {% if pr.approved_at %}bg-green-100{% elif pr.status == 'REJECTED' %}bg-red-100{% else %}bg-gray-100{% endif %}">
+            <i class="ti {% if pr.approved_at %}ti-check text-green-600{% elif pr.status == 'REJECTED' %}ti-x text-red-500{% else %}ti-check text-gray-300{% endif %} text-xs"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium {% if pr.approved_at or pr.status == 'REJECTED' %}text-gray-900{% else %}text-gray-300{% endif %}">
+              {% if pr.status == 'REJECTED' %}Ditolak{% else %}Disetujui{% endif %}
+            </div>
+            {% if pr.approved_at %}
+            <div class="text-xs text-gray-400">{{ pr.approved_at|date:"d M Y H:i" }}</div>
+            <div class="text-xs text-gray-400">oleh {{ pr.approved_by.get_full_name|default:"—" }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- PO Created -->
+        <div class="flex items-start gap-3">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
+            {% if pr.status == 'PO_CREATED' %}bg-blue-100{% else %}bg-gray-100{% endif %}">
+            <i class="ti ti-clipboard-check {% if pr.status == 'PO_CREATED' %}text-blue-600{% else %}text-gray-300{% endif %} text-xs"></i>
+          </div>
+          <div>
+            <div class="text-xs font-medium {% if pr.status == 'PO_CREATED' %}text-gray-900{% else %}text-gray-300{% endif %}">PO Dibuat</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+
+      {% if pr.status == 'DRAFT' %}
+      <form method="post" action="{% url 'purchasing:pr_submit' pr.uid %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-send"></i> Submit untuk Approval
+        </button>
+      </form>
+      {% endif %}
+
+      {% if pr.status == 'PENDING' %}
+      <form method="post" action="{% url 'purchasing:pr_approve' pr.uid %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-check"></i> Approve
+        </button>
+      </form>
+      <div x-data="{ open: false }">
+        <button @click="open = !open" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition">
+          <i class="ti ti-x"></i> Tolak
+        </button>
+        <div x-show="open" x-cloak class="mt-2">
+          <form method="post" action="{% url 'purchasing:pr_reject' pr.uid %}">
+            {% csrf_token %}
+            <textarea name="reason" rows="2" required placeholder="Alasan penolakan (wajib)..."
+                      class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-2"></textarea>
+            <button type="submit" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition">
+              Konfirmasi Tolak
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if pr.status == 'APPROVED' %}
+      <a href="{% url 'purchasing:po_create_from_pr' pr.uid %}"
+         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
+        <i class="ti ti-clipboard-plus"></i> Buat Purchase Order
+      </a>
+      {% endif %}
+
+      <a href="{% url 'purchasing:pr_list' %}"
+         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm transition">
+        <i class="ti ti-arrow-left"></i> Kembali ke Daftar
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

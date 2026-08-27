@@ -1,0 +1,115 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+
+{% block breadcrumb %}{% breadcrumb "Inventory" "Produk" %}{% endblock %}
+
+{% block content %}
+<!-- Stats row -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+      <i class="ti ti-box text-blue-600 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-gray-900">{{ stats.total }}</div>
+      <div class="text-xs text-gray-400">Total Produk Aktif</div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border border-amber-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+      <i class="ti ti-alert-triangle text-amber-500 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-amber-600">{{ stats.low_stock }}</div>
+      <div class="text-xs text-gray-400">Stok Rendah</div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border border-red-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+      <i class="ti ti-circle-x text-red-500 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-red-600">{{ stats.zero_stock }}</div>
+      <div class="text-xs text-gray-400">Stok Kosong</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main card -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+  <!-- Header & actions -->
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <div>
+      <h2 class="text-sm font-semibold text-gray-900">Daftar Produk</h2>
+      <p class="text-xs text-gray-400 mt-0.5">{{ total_count }} produk ditemukan</p>
+    </div>
+    <a href="{% url 'inventory:product_create' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 hover:bg-nexus-700 text-white text-sm font-medium rounded-lg transition">
+      <i class="ti ti-plus"></i>
+      Tambah Produk
+    </a>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="px-5 py-3 bg-gray-50 border-b border-gray-100"
+       x-data>
+    <form method="get"
+          hx-get="{% url 'inventory:product_list' %}"
+          hx-target="#product-table"
+          hx-trigger="change, search"
+          hx-push-url="true"
+          class="flex items-center gap-3 flex-wrap">
+
+      <!-- Search -->
+      <div class="relative flex-1 min-w-[200px]">
+        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" name="q" value="{{ q }}"
+               placeholder="Cari SKU, nama, barcode..."
+               class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 bg-white">
+      </div>
+
+      <!-- Category -->
+      <select name="category" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Kategori</option>
+        {% for cat in categories %}
+        <option value="{{ cat.pk }}" {% if selected_category == cat.pk|stringformat:"s" %}selected{% endif %}>
+          {{ cat.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <!-- Type -->
+      <select name="type" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Tipe</option>
+        {% for val, label in product_types %}
+        <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Stock filter -->
+      <select name="stock" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Stok</option>
+        <option value="low" {% if selected_stock == 'low' %}selected{% endif %}>⚠ Stok Rendah</option>
+        <option value="zero" {% if selected_stock == 'zero' %}selected{% endif %}>✗ Stok Kosong</option>
+      </select>
+
+      {% if q or selected_category or selected_type or selected_stock %}
+      <a href="{% url 'inventory:product_list' %}" class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+        <i class="ti ti-x"></i> Reset
+      </a>
+      {% endif %}
+
+      <!-- HTMX loading indicator -->
+      <div class="htmx-indicator">
+        <div class="w-4 h-4 border-2 border-nexus-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div id="product-table">
+    {% include "inventory/partials/product_table.html" %}
+  </div>
+</div>
+{% endblock %}

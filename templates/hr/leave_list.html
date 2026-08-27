@@ -1,0 +1,66 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Cuti" %}{% endblock %}
+{% block content %}
+<div class="flex gap-2 mb-5 flex-wrap">
+  <a href="{% url 'hr:leave_list' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium border {% if not selected_status %}bg-nexus-600 text-white border-nexus-600{% else %}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{% endif %}">Semua</a>
+  {% for val, label in statuses %}
+  <a href="?status={{ val }}" class="px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5
+    {% if selected_status == val %}bg-nexus-600 text-white border-nexus-600{% else %}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{% endif %}">
+    {{ label }}
+    {% if counts|get_item:val %}<span class="{% if selected_status == val %}bg-white/20{% else %}bg-gray-100{% endif %} px-1.5 rounded-full text-xs">{{ counts|get_item:val }}</span>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <h2 class="text-sm font-semibold text-gray-900">Pengajuan Cuti</h2>
+    <a href="{% url 'hr:leave_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 hover:bg-nexus-700 text-white text-sm font-medium rounded-lg transition">
+      <i class="ti ti-plus"></i> Ajukan Cuti
+    </a>
+  </div>
+  {% if leaves %}
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-100">
+      <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Karyawan</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jenis Cuti</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Periode</th>
+      <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hari</th>
+      <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+      <th class="px-4 py-3"></th>
+    </tr></thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for leave in leaves %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-5 py-3.5">
+          <div class="font-medium text-gray-900">{{ leave.employee.full_name }}</div>
+          <div class="text-xs text-gray-400">{{ leave.employee.department.name|default:"—" }}</div>
+        </td>
+        <td class="px-4 py-3.5 text-sm text-gray-600">{{ leave.leave_type.name }}</td>
+        <td class="px-4 py-3.5 text-xs text-gray-500">
+          {{ leave.start_date|date:"d M Y" }} s/d {{ leave.end_date|date:"d M Y" }}
+        </td>
+        <td class="px-4 py-3.5 text-center font-semibold text-gray-900">{{ leave.total_days }} hari</td>
+        <td class="px-4 py-3.5 text-center">
+          <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+            {% if leave.status == 'PENDING' %}bg-amber-50 text-amber-700 border-amber-200
+            {% elif leave.status == 'APPROVED' %}bg-green-50 text-green-700 border-green-200
+            {% elif leave.status == 'REJECTED' %}bg-red-50 text-red-600 border-red-200
+            {% elif leave.status == 'CANCELLED' %}bg-gray-50 text-gray-400 border-gray-200
+            {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+            {{ leave.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-right">
+          <a href="{% url 'hr:leave_detail' leave.uid %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="py-16 text-center"><i class="ti ti-calendar-off text-gray-200 text-5xl mb-3 block"></i><p class="text-sm text-gray-400 mb-4">Belum ada pengajuan cuti.</p><a href="{% url 'hr:leave_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 text-white text-sm font-medium rounded-lg"><i class="ti ti-plus"></i> Ajukan Cuti</a></div>
+  {% endif %}
+</div>
+{% endblock %}

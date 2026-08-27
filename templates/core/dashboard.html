@@ -1,0 +1,170 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+
+<!-- Stats cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Produk</span>
+      <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+        <i class="ti ti-box text-blue-600 text-sm"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-gray-900">{{ stats.total_products|default:"0" }}</div>
+    <div class="text-xs text-gray-400 mt-1">aktif di sistem</div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Stok Alert</span>
+      <div class="w-8 h-8 {% if stats.low_stock_alerts > 0 %}bg-red-50{% else %}bg-green-50{% endif %} rounded-lg flex items-center justify-center">
+        <i class="ti ti-alert-triangle {% if stats.low_stock_alerts > 0 %}text-red-600{% else %}text-green-600{% endif %} text-sm"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold {% if stats.low_stock_alerts > 0 %}text-red-600{% else %}text-gray-900{% endif %}">
+      {{ stats.low_stock_alerts|default:"0" }}
+    </div>
+    <div class="text-xs text-gray-400 mt-1">produk di bawah minimum</div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">PR Pending</span>
+      <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+        <i class="ti ti-shopping-cart text-amber-600 text-sm"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-gray-900">{{ stats.pending_pr|default:"0" }}</div>
+    <div class="text-xs text-gray-400 mt-1">menunggu approval</div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Invoice Overdue</span>
+      <div class="w-8 h-8 {% if stats.overdue_invoices > 0 %}bg-red-50{% else %}bg-green-50{% endif %} rounded-lg flex items-center justify-center">
+        <i class="ti ti-cash {% if stats.overdue_invoices > 0 %}text-red-600{% else %}text-green-600{% endif %} text-sm"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold {% if stats.overdue_invoices > 0 %}text-red-600{% else %}text-gray-900{% endif %}">
+      {{ stats.overdue_invoices|default:"0" }}
+    </div>
+    <div class="text-xs text-gray-400 mt-1">melewati jatuh tempo</div>
+  </div>
+
+</div>
+
+<!-- Main grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Pending Approvals -->
+  <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden" id="approvals">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div class="flex items-center gap-2">
+        <i class="ti ti-check-circle text-amber-500"></i>
+        <h3 class="text-sm font-semibold text-gray-900">Menunggu Approval Saya</h3>
+      </div>
+      {% if pending_approvals %}
+      <span class="text-xs bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">
+        {{ pending_approvals|length }} pending
+      </span>
+      {% endif %}
+    </div>
+
+    {% if pending_approvals %}
+    <div class="divide-y divide-gray-50">
+      {% for approval in pending_approvals %}
+      <div class="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition">
+        <div class="w-9 h-9 bg-nexus-50 rounded-lg flex items-center justify-center flex-shrink-0">
+          <i class="ti ti-file-text text-nexus-600 text-sm"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate">{{ approval.title }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            Dari {{ approval.requested_by.get_full_name|default:approval.requested_by.username }}
+            · {{ approval.requested_at|timesince }} lalu
+          </p>
+        </div>
+        {% if approval.amount %}
+        <div class="text-sm font-semibold text-gray-900 flex-shrink-0">
+          Rp {{ approval.amount|floatformat:0 }}
+        </div>
+        {% endif %}
+        <span class="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0
+          {% if approval.priority == 'URGENT' %}bg-red-100 text-red-700
+          {% elif approval.priority == 'HIGH' %}bg-orange-100 text-orange-700
+          {% else %}bg-gray-100 text-gray-600{% endif %}">
+          {{ approval.get_priority_display }}
+        </span>
+        <a href="#" class="flex-shrink-0 text-xs text-nexus-600 hover:text-nexus-700 font-medium">
+          Review →
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-12 text-center">
+      <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+        <i class="ti ti-circle-check text-green-500 text-2xl"></i>
+      </div>
+      <p class="text-sm text-gray-500">Tidak ada yang perlu di-approve</p>
+      <p class="text-xs text-gray-400 mt-1">Semua bersih 🎉</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Quick actions + Activity -->
+  <div class="space-y-4">
+
+    <!-- Quick actions -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <h3 class="text-sm font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
+      <div class="grid grid-cols-2 gap-2">
+        <a href="{% url 'purchasing:pr_create' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-nexus-300 hover:bg-nexus-50 transition text-center group">
+          <i class="ti ti-plus text-gray-400 group-hover:text-nexus-600 text-xl transition"></i>
+          <span class="text-xs text-gray-600 group-hover:text-nexus-700 font-medium">Buat PR</span>
+        </a>
+        <a href="{% url 'inventory:stock_list' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-nexus-300 hover:bg-nexus-50 transition text-center group">
+          <i class="ti ti-box text-gray-400 group-hover:text-nexus-600 text-xl transition"></i>
+          <span class="text-xs text-gray-600 group-hover:text-nexus-700 font-medium">Cek Stok</span>
+        </a>
+        <a href="{% url 'sales:quotation_create' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-nexus-300 hover:bg-nexus-50 transition text-center group">
+          <i class="ti ti-file-plus text-gray-400 group-hover:text-nexus-600 text-xl transition"></i>
+          <span class="text-xs text-gray-600 group-hover:text-nexus-700 font-medium">Buat Quote</span>
+        </a>
+        <a href="{% url 'finance:invoice_list' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-nexus-300 hover:bg-nexus-50 transition text-center group">
+          <i class="ti ti-cash text-gray-400 group-hover:text-nexus-600 text-xl transition"></i>
+          <span class="text-xs text-gray-600 group-hover:text-nexus-700 font-medium">Invoice</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Company info -->
+    {% if active_company %}
+    <div class="bg-gradient-to-br from-nexus-600 to-nexus-800 rounded-xl p-5 text-white">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="ti ti-building text-nexus-200 text-sm"></i>
+        <span class="text-xs font-medium text-nexus-200 uppercase tracking-wide">Perusahaan Aktif</span>
+      </div>
+      <div class="font-semibold text-sm">{{ active_company.name }}</div>
+      <div class="text-nexus-200 text-xs mt-0.5">{{ active_company.code }} · {{ active_company.currency }}</div>
+
+      <div class="mt-4 pt-3 border-t border-nexus-500">
+        <a href="{% url 'organization:company_detail' %}"
+           class="text-xs text-nexus-200 hover:text-white transition flex items-center gap-1">
+          <i class="ti ti-settings text-xs"></i>
+          Pengaturan company →
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

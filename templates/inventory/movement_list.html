@@ -1,0 +1,96 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+
+{% block breadcrumb %}{% breadcrumb "Inventory" "Mutasi Stok" %}{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-100">
+    <h2 class="text-sm font-semibold text-gray-900">Riwayat Mutasi Stok</h2>
+    <p class="text-xs text-gray-400 mt-0.5">Semua pergerakan stok masuk & keluar</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+    <form method="get" class="flex items-center gap-3 flex-wrap">
+      <div class="relative flex-1 min-w-[180px]">
+        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Cari produk, SKU, referensi..."
+               class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 bg-white">
+      </div>
+      <select name="type" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+        <option value="">Semua Tipe</option>
+        {% for val, label in movement_types %}
+        <option value="{{ val }}" {% if selected_type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="warehouse" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+        <option value="">Semua Gudang</option>
+        {% for wh in warehouses %}
+        <option value="{{ wh.pk }}" {% if selected_warehouse == wh.pk|stringformat:"s" %}selected{% endif %}>{{ wh.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="date" name="from" value="{{ date_from }}"
+             class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+      <input type="date" name="to" value="{{ date_to }}"
+             class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+      <button type="submit" class="px-4 py-2 bg-nexus-600 text-white text-sm rounded-lg hover:bg-nexus-700 transition">Filter</button>
+      {% if q or selected_type or selected_warehouse or date_from or date_to %}
+      <a href="{% url 'inventory:movement_list' %}" class="text-xs text-gray-400 hover:text-gray-600"><i class="ti ti-x"></i> Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if movements %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100">
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Waktu</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Produk</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipe</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Gudang</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Referensi</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
+          <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Saldo</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for m in movements %}
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-5 py-3 text-xs text-gray-400 whitespace-nowrap">{{ m.created_at|date:"d M Y H:i" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'inventory:product_detail' m.product.uid %}" class="font-medium text-gray-900 hover:text-nexus-600 transition">{{ m.product.name }}</a>
+            <div class="text-xs font-mono text-gray-300">{{ m.product.sku }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <span class="text-xs px-2 py-0.5 rounded border
+              {% if m.quantity > 0 %}bg-green-50 text-green-700 border-green-200{% else %}bg-red-50 text-red-700 border-red-200{% endif %}">
+              {{ m.get_movement_type_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-500">{{ m.warehouse.code }}</td>
+          <td class="px-4 py-3 text-xs font-mono text-gray-400">{{ m.reference|default:"—" }}</td>
+          <td class="px-4 py-3 text-right font-mono font-bold text-sm {{ m.quantity|movement_color }}">
+            {{ m.quantity|movement_sign }}
+          </td>
+          <td class="px-5 py-3 text-right font-mono text-xs text-gray-600">{{ m.quantity_after|floatformat:"-2" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if movements.has_other_pages %}
+  <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+    <span class="text-xs text-gray-400">Hal {{ movements.number }} / {{ movements.paginator.num_pages }}</span>
+    <div class="flex gap-1">
+      {% if movements.has_previous %}<a href="?page={{ movements.previous_page_number }}&q={{ q }}&type={{ selected_type }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-left"></i></a>{% endif %}
+      {% if movements.has_next %}<a href="?page={{ movements.next_page_number }}&q={{ q }}&type={{ selected_type }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-right"></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="py-12 text-center text-sm text-gray-400">Belum ada mutasi stok.</div>
+  {% endif %}
+</div>
+{% endblock %}

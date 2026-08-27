@@ -1,0 +1,9 @@
+{% for uc in memberships %}
+<div class="flex items-center gap-3 py-2">
+  <span class="text-sm font-medium text-gray-900">{{ uc.company.name }}</span>
+  <span class="text-xs bg-nexus-100 text-nexus-700 px-2 py-0.5 rounded-full">{{ uc.role.name }}</span>
+  {% if uc.is_default %}<span class="text-xs text-gray-400">default</span>{% endif %}
+</div>
+{% empty %}
+<p class="text-sm text-gray-400">Belum ada company.</p>
+{% endfor %}

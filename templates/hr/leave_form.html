@@ -1,0 +1,26 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Cuti" "Ajukan" %}{% endblock %}
+{% block content %}
+<div class="max-w-xl">
+  <form method="post" enctype="multipart/form-data" class="space-y-5">
+    {% csrf_token %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <h3 class="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-3">Form Pengajuan Cuti</h3>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Karyawan <span class="text-red-500">*</span></label>{{ form.employee }}{% if form.employee.errors %}<p class="text-xs text-red-600 mt-1">{{ form.employee.errors.0 }}</p>{% endif %}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Jenis Cuti <span class="text-red-500">*</span></label>{{ form.leave_type }}</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Tanggal Mulai <span class="text-red-500">*</span></label>{{ form.start_date }}</div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Tanggal Selesai <span class="text-red-500">*</span></label>{{ form.end_date }}</div>
+      </div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Alasan <span class="text-red-500">*</span></label>{{ form.reason }}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Lampiran</label>{{ form.attachment }}<p class="text-xs text-gray-400 mt-0.5">Surat dokter, dll (opsional)</p></div>
+    </div>
+    <div class="flex justify-between">
+      <a href="{% url 'hr:leave_list' %}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</a>
+      <button type="submit" class="px-5 py-2 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-check"></i> Ajukan Cuti</button>
+    </div>
+  </form>
+</div>
+<style>select,input[type=date],input[type=text],textarea{@apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition;} textarea{resize:none;}</style>
+{% endblock %}

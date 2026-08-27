@@ -1,0 +1,52 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Sales" "Sales Order" %}{% endblock %}
+{% block content %}
+<div class="flex gap-2 mb-5 flex-wrap">
+  <a href="{% url 'sales:so_list' %}" class="px-3 py-1.5 rounded-lg text-xs font-medium border {% if not selected_status %}bg-nexus-600 text-white border-nexus-600{% else %}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{% endif %}">Semua</a>
+  {% for val, label in statuses %}
+  <a href="?status={{ val }}" class="px-3 py-1.5 rounded-lg text-xs font-medium border {% if selected_status == val %}bg-nexus-600 text-white border-nexus-600{% else %}bg-white text-gray-600 border-gray-200 hover:bg-gray-50{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <h2 class="text-sm font-semibold text-gray-900">Daftar Sales Order</h2>
+    <a href="{% url 'sales:so_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 hover:bg-nexus-700 text-white text-sm font-medium rounded-lg transition"><i class="ti ti-plus"></i> Buat SO</a>
+  </div>
+  {% if sos %}
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-100">
+      <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nomor SO</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+      <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
+      <th class="px-4 py-3"></th>
+    </tr></thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for so in sos %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-5 py-3.5"><a href="{% url 'sales:so_detail' so.uid %}" class="font-medium text-gray-900 hover:text-nexus-600">{{ so.number }}</a></td>
+        <td class="px-4 py-3.5 text-sm text-gray-600">{{ so.customer.name }}</td>
+        <td class="px-4 py-3.5 text-right font-mono text-xs text-gray-600">{{ so.total_amount|idr }}</td>
+        <td class="px-4 py-3.5 text-center">
+          <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+            {% if so.status == 'DRAFT' %}bg-gray-50 text-gray-600 border-gray-200
+            {% elif so.status == 'CONFIRMED' %}bg-blue-50 text-blue-700 border-blue-200
+            {% elif so.status == 'COMPLETED' %}bg-green-50 text-green-700 border-green-200
+            {% elif so.status == 'PARTIAL' %}bg-amber-50 text-amber-700 border-amber-200
+            {% else %}bg-gray-50 text-gray-400 border-gray-200{% endif %}">
+            {{ so.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-right text-xs text-gray-400">{{ so.order_date|date:"d M Y" }}</td>
+        <td class="px-4 py-3.5 text-right"><a href="{% url 'sales:so_detail' so.uid %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="py-16 text-center"><i class="ti ti-receipt-off text-gray-200 text-5xl mb-3 block"></i><p class="text-sm text-gray-400">Belum ada Sales Order.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

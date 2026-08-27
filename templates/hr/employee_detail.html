@@ -1,0 +1,248 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Karyawan" emp.full_name %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Kiri: Info utama -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Profile card -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start gap-5">
+        <div class="w-20 h-20 rounded-2xl {% if emp.gender == 'M' %}bg-blue-100{% else %}bg-pink-100{% endif %} flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {% if emp.photo %}
+            <img src="{{ emp.photo.url }}" class="w-20 h-20 object-cover rounded-2xl">
+          {% else %}
+            <span class="text-2xl font-bold {% if emp.gender == 'M' %}text-blue-600{% else %}text-pink-600{% endif %}">
+              {{ emp.first_name|slice:":1"|upper }}{{ emp.last_name|slice:":1"|upper }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="flex-1">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">{{ emp.full_name }}</h2>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{{ emp.employee_id }}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+                  {% if emp.employment_status == 'PERMANENT' %}bg-green-50 text-green-700 border-green-200
+                  {% elif emp.employment_status == 'CONTRACT' %}bg-blue-50 text-blue-700 border-blue-200
+                  {% elif emp.employment_status == 'PROBATION' %}bg-amber-50 text-amber-700 border-amber-200
+                  {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+                  {{ emp.get_employment_status_display }}
+                </span>
+              </div>
+              <div class="text-sm text-gray-500 mt-1">
+                {{ emp.position.name|default:"—" }}
+                {% if emp.department %} · {{ emp.department.name }}{% endif %}
+              </div>
+            </div>
+            <a href="{% url 'hr:employee_edit' emp.uid %}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+              <i class="ti ti-pencil"></i> Edit
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border-t border-gray-100 mt-5">
+        <div class="px-4 py-3 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-0.5">Tanggal Masuk</div>
+          <div class="text-sm font-medium">{{ emp.join_date|date:"d M Y" }}</div>
+        </div>
+        <div class="px-4 py-3 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-0.5">Masa Kerja</div>
+          <div class="text-sm font-medium">{{ emp.years_of_service }} tahun</div>
+        </div>
+        <div class="px-4 py-3 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-0.5">Usia</div>
+          <div class="text-sm font-medium">{{ emp.age|default:"—" }} tahun</div>
+        </div>
+        <div class="px-4 py-3">
+          <div class="text-xs text-gray-400 mb-0.5">Status Pajak</div>
+          <div class="text-sm font-medium">{{ emp.tax_status }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kehadiran bulan ini -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Kehadiran Bulan Ini</h3>
+        <a href="{% url 'hr:attendance_list' %}?employee={{ emp.pk }}" class="text-xs text-nexus-600 font-medium">Lihat semua →</a>
+      </div>
+      <!-- Stats kehadiran -->
+      <div class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100">
+        <div class="px-4 py-3 text-center">
+          <div class="text-xl font-bold text-green-600">{{ att_stats.present|default:0 }}</div>
+          <div class="text-xs text-gray-400">Hadir</div>
+        </div>
+        <div class="px-4 py-3 text-center">
+          <div class="text-xl font-bold text-amber-500">{{ att_stats.late|default:0 }}</div>
+          <div class="text-xs text-gray-400">Terlambat</div>
+        </div>
+        <div class="px-4 py-3 text-center">
+          <div class="text-xl font-bold text-blue-500">{{ att_stats.leave|default:0 }}</div>
+          <div class="text-xs text-gray-400">Cuti</div>
+        </div>
+        <div class="px-4 py-3 text-center">
+          <div class="text-xl font-bold text-red-500">{{ att_stats.absent|default:0 }}</div>
+          <div class="text-xs text-gray-400">Absen</div>
+        </div>
+      </div>
+      <!-- 10 hari terakhir -->
+      {% if attendances %}
+      <div class="divide-y divide-gray-50">
+        {% for att in attendances %}
+        <div class="flex items-center gap-4 px-5 py-2.5">
+          <div class="text-xs text-gray-400 w-20 flex-shrink-0">{{ att.date|date:"d M Y" }}</div>
+          <span class="text-xs px-2 py-0.5 rounded-full border
+            {% if att.status == 'PRESENT' %}bg-green-50 text-green-700 border-green-200
+            {% elif att.status == 'LATE' %}bg-amber-50 text-amber-700 border-amber-200
+            {% elif att.status == 'ABSENT' %}bg-red-50 text-red-600 border-red-200
+            {% elif att.status == 'LEAVE' %}bg-blue-50 text-blue-700 border-blue-200
+            {% elif att.status == 'WFH' %}bg-purple-50 text-purple-700 border-purple-200
+            {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+            {{ att.get_status_display }}
+          </span>
+          {% if att.check_in %}<span class="text-xs text-gray-400 font-mono">{{ att.check_in|time:"H:i" }}{% if att.check_out %} – {{ att.check_out|time:"H:i" }}{% endif %}</span>{% endif %}
+          {% if att.late_minutes > 0 %}<span class="text-xs text-amber-600">+{{ att.late_minutes }}mnt</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-6 text-center text-sm text-gray-400">Belum ada data absensi bulan ini.</div>
+      {% endif %}
+    </div>
+
+    <!-- Saldo cuti -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Saldo Cuti {{ now|date:"Y"|default:"2026" }}</h3>
+      </div>
+      {% if leave_balances %}
+      <div class="divide-y divide-gray-50">
+        {% for bal in leave_balances %}
+        <div class="flex items-center gap-4 px-5 py-3">
+          <div class="flex-1">
+            <div class="text-sm font-medium text-gray-900">{{ bal.leave_type.name }}</div>
+            <div class="text-xs text-gray-400">Dipakai: {{ bal.used_days }} hari</div>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold text-gray-900">{{ bal.remaining_days }}</div>
+            <div class="text-xs text-gray-400">dari {{ bal.total_days }} hari</div>
+          </div>
+          <!-- Progress bar -->
+          <div class="w-20">
+            <div class="w-full bg-gray-100 rounded-full h-1.5">
+              {% if bal.total_days > 0 %}
+              <div class="bg-nexus-500 h-1.5 rounded-full"
+                   style="width: {% widthratio bal.remaining_days bal.total_days 100 %}%"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-6 text-center text-sm text-gray-400">Belum ada saldo cuti.</div>
+      {% endif %}
+    </div>
+
+    <!-- Riwayat payroll -->
+    {% if payroll_details %}
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Riwayat Gaji</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Periode</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Gaji Pokok</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Tunjangan</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Potongan</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Gaji Bersih</th>
+          <th class="px-4 py-2.5"></th>
+        </tr></thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for pd in payroll_details %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3">
+              <div class="font-medium text-gray-900">{{ pd.payroll.period_month|stringformat:"02d" }}/{{ pd.payroll.period_year }}</div>
+              <div class="text-xs text-gray-400">{{ pd.payroll.get_status_display }}</div>
+            </td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-gray-600">{{ pd.basic_salary|idr }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-green-600">+{{ pd.total_earnings|idr }}</td>
+            <td class="px-4 py-3 text-right font-mono text-xs text-red-500">-{{ pd.total_deductions|idr }}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold text-gray-900">{{ pd.net_salary|idr }}</td>
+            <td class="px-4 py-3 text-right">
+              <a href="{% url 'hr:payslip_pdf' pd.payroll.uid emp.uid %}"
+                 class="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1 justify-end">
+                <i class="ti ti-file-type-pdf text-xs"></i> Slip
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Kanan: sidebar -->
+  <div class="space-y-4">
+
+    <!-- Info pribadi -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Info Pribadi</div>
+      <div class="space-y-2.5 text-sm">
+        <div class="flex justify-between"><span class="text-gray-400">Gender</span><span class="font-medium">{{ emp.get_gender_display }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Tgl Lahir</span><span class="font-medium">{{ emp.birth_date|date:"d M Y"|default:"—" }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Status</span><span class="font-medium">{{ emp.get_marital_status_display }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Tanggungan</span><span class="font-medium">{{ emp.dependents }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">NIK</span><span class="font-medium font-mono text-xs">{{ emp.nik|default:"—" }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">NPWP</span><span class="font-medium font-mono text-xs">{{ emp.npwp|default:"—" }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">BPJS Kes</span><span class="font-medium text-xs">{{ emp.bpjs_kes|default:"—" }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">BPJS TK</span><span class="font-medium text-xs">{{ emp.bpjs_tk|default:"—" }}</span></div>
+      </div>
+    </div>
+
+    <!-- Rekening -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Rekening Bank</div>
+      <div class="space-y-2 text-sm">
+        <div><span class="text-gray-400 text-xs">Bank</span><div class="font-medium">{{ emp.bank_name|default:"—" }}</div></div>
+        <div><span class="text-gray-400 text-xs">No. Rekening</span><div class="font-medium font-mono">{{ emp.bank_account|default:"—" }}</div></div>
+        <div><span class="text-gray-400 text-xs">Atas Nama</span><div class="font-medium">{{ emp.bank_account_name|default:"—" }}</div></div>
+      </div>
+    </div>
+
+    <!-- Gaji pokok -->
+    <div class="bg-gradient-to-br from-nexus-600 to-nexus-800 rounded-xl p-5 text-white">
+      <div class="text-nexus-200 text-xs mb-1">Gaji Pokok</div>
+      <div class="text-2xl font-bold">{{ emp.basic_salary|idr }}</div>
+      <div class="text-nexus-200 text-xs mt-2">{{ emp.get_tax_status_display }}</div>
+    </div>
+
+    <!-- Aksi -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+      <a href="{% url 'hr:leave_create' %}"
+         class="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-nexus-50 hover:border-nexus-200 transition text-sm text-gray-600">
+        <i class="ti ti-calendar-off text-gray-400"></i> Ajukan Cuti
+      </a>
+      <a href="{% url 'hr:attendance_create' %}"
+         class="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-sm text-gray-600">
+        <i class="ti ti-clock text-gray-400"></i> Catat Absensi
+      </a>
+      <a href="{% url 'hr:employee_edit' emp.uid %}"
+         class="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-sm text-gray-600">
+        <i class="ti ti-pencil text-gray-400"></i> Edit Data
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

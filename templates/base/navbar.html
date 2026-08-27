@@ -1,0 +1,111 @@
+<!-- Top Navbar -->
+<header class="h-16 bg-white border-b border-gray-200 flex items-center px-6 gap-4 flex-shrink-0 z-10">
+
+  <!-- Search -->
+  <div class="flex-1 max-w-md">
+    <div class="relative">
+      <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+      <input type="text"
+             placeholder="Cari produk, PO, invoice..."
+             class="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-500 focus:border-transparent transition">
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2 ml-auto">
+
+    <!-- Approval pending badge -->
+    {% with pending_count=pending_approvals.count|default:0 %}
+    <a href="{% url 'core:dashboard' %}#approvals"
+       class="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition">
+      <i class="ti ti-check-circle text-xl"></i>
+      {% if pending_count > 0 %}
+      <span class="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+        {{ pending_count }}
+      </span>
+      {% endif %}
+    </a>
+    {% endwith %}
+
+    <!-- Notifications -->
+    <div class="relative" x-data="{ open: false }">
+      <button @click="open = !open"
+              class="relative p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition">
+        <i class="ti ti-bell text-xl"></i>
+        {% if unread_count > 0 %}
+        <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+          {{ unread_count|default:0 }}
+        </span>
+        {% endif %}
+      </button>
+
+      <!-- Notification dropdown -->
+      <div x-show="open" x-cloak @click.outside="open = false"
+           class="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <span class="text-sm font-semibold text-gray-900">Notifikasi</span>
+          {% if unread_count > 0 %}
+          <span class="text-xs text-nexus-600 font-medium">{{ unread_count }} belum dibaca</span>
+          {% endif %}
+        </div>
+
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-50">
+          {% if unread_notifications %}
+            {% for notif in unread_notifications %}
+            <div class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition cursor-pointer
+              {% if not notif.is_read %}bg-nexus-50{% endif %}"
+              hx-post="{% url 'core:mark_notification_read' notif.pk %}"
+              hx-swap="outerHTML">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
+                {% if notif.notification_type == 'APPROVAL' %}bg-amber-100
+                {% elif notif.notification_type == 'STOCK_ALERT' %}bg-red-100
+                {% else %}bg-blue-100{% endif %}">
+                <i class="ti
+                  {% if notif.notification_type == 'APPROVAL' %}ti-check text-amber-600
+                  {% elif notif.notification_type == 'STOCK_ALERT' %}ti-alert-triangle text-red-600
+                  {% else %}ti-info-circle text-blue-600{% endif %} text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium text-gray-900 truncate">{{ notif.title }}</p>
+                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ notif.message }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ notif.created_at|timesince }} lalu</p>
+              </div>
+              {% if not notif.is_read %}
+              <div class="w-2 h-2 bg-nexus-500 rounded-full mt-2 flex-shrink-0"></div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="py-8 text-center">
+            <i class="ti ti-bell-off text-gray-300 text-3xl"></i>
+            <p class="text-xs text-gray-400 mt-2">Tidak ada notifikasi</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="px-4 py-2 border-t border-gray-100">
+          <a href="{% url 'core:notifications' %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">
+            Lihat semua →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="h-6 w-px bg-gray-200"></div>
+
+    <!-- User avatar -->
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-nexus-600 rounded-full flex items-center justify-center">
+        <span class="text-white text-xs font-semibold">
+          {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+        </span>
+      </div>
+      <div class="hidden sm:block">
+        <div class="text-xs font-medium text-gray-900 leading-tight">{{ user.get_full_name|default:user.username }}</div>
+        {% if active_company %}
+        <div class="text-xs text-gray-400">{{ active_company.name|truncatechars:20 }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>

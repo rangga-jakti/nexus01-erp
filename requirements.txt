@@ -1,0 +1,24 @@
+# Nexus-01 ERP — Dependencies
+
+# Core
+Django>=6.0
+psycopg2-binary>=2.9.9       # PostgreSQL adapter
+
+# Frontend integration
+django-htmx>=1.17.0
+
+# Audit trail
+django-simple-history>=3.4.0
+
+# Configuration
+python-decouple>=3.8
+
+# Media/images
+Pillow>=10.0.0
+
+# Export
+openpyxl>=3.1.0              # Excel (.xlsx)
+reportlab>=4.0.0             # PDF
+
+# Dev tools (hapus saat production)
+django-debug-toolbar>=4.2.0

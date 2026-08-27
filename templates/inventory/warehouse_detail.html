@@ -1,0 +1,94 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+
+{% block breadcrumb %}{% breadcrumb "Inventory" "Gudang" warehouse.name %}{% endblock %}
+
+{% block content %}
+<!-- Warehouse header -->
+<div class="bg-white rounded-xl border border-gray-200 p-5 mb-5 flex items-center gap-4">
+  <div class="w-12 h-12 bg-nexus-50 rounded-xl flex items-center justify-center flex-shrink-0">
+    <i class="ti ti-building-warehouse text-nexus-600 text-xl"></i>
+  </div>
+  <div class="flex-1">
+    <div class="flex items-center gap-2">
+      <h2 class="text-base font-semibold text-gray-900">{{ warehouse.name }}</h2>
+      {% if warehouse.is_default %}
+      <span class="text-xs bg-nexus-100 text-nexus-700 px-2 py-0.5 rounded-full">Default</span>
+      {% endif %}
+    </div>
+    <div class="text-xs text-gray-400 mt-0.5">
+      {{ warehouse.code }}
+      {% if warehouse.branch %} · {{ warehouse.branch.name }}{% endif %}
+      {% if warehouse.address %} · {{ warehouse.address|truncatechars:60 }}{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'inventory:warehouse_edit' warehouse.uid %}"
+     class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 hover:bg-gray-50 transition">
+    <i class="ti ti-pencil"></i> Edit
+  </a>
+</div>
+
+<!-- Stock list -->
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <h3 class="text-sm font-semibold text-gray-900">Stok di Gudang Ini</h3>
+    <span class="text-xs text-gray-400">{{ total_items }} produk</span>
+  </div>
+
+  <!-- Search -->
+  <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+    <form method="get">
+      <div class="relative">
+        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Cari produk..."
+               class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 bg-white">
+      </div>
+    </form>
+  </div>
+
+  {% if stocks %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100">
+          <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Produk</th>
+          <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kategori</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stok</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reserved</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tersedia</th>
+          <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nilai</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for s in stocks %}
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-5 py-3">
+            <a href="{% url 'inventory:product_detail' s.product.uid %}"
+               class="font-medium text-gray-900 hover:text-nexus-600 transition">{{ s.product.name }}</a>
+            <div class="text-xs font-mono text-gray-400">{{ s.product.sku }}</div>
+          </td>
+          <td class="px-4 py-3 text-xs text-gray-400">{{ s.product.category.name|default:"—" }}</td>
+          <td class="px-4 py-3 text-right font-mono text-sm font-semibold {{ s.quantity|stock_color:s.product.minimum_stock }}">
+            {{ s.quantity|floatformat:"-2" }}
+            <span class="text-xs font-normal text-gray-400">{{ s.product.unit.symbol|default:"" }}</span>
+          </td>
+          <td class="px-4 py-3 text-right font-mono text-xs text-gray-400">{{ s.reserved_quantity|floatformat:"-2" }}</td>
+          <td class="px-4 py-3 text-right font-mono text-xs text-green-600 font-medium">{{ s.available_quantity|floatformat:"-2" }}</td>
+          <td class="px-4 py-3 text-right text-xs text-gray-500">
+            {% with val=s.quantity|floatformat:"2" %}{{ s.product.purchase_price|idr }}{% endwith %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'inventory:stock_adjust' s.pk %}"
+               class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Adjust</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="py-12 text-center text-sm text-gray-400">Tidak ada stok.</div>
+  {% endif %}
+</div>
+{% endblock %}

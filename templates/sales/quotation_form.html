@@ -1,0 +1,111 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Sales" "Quotation" "Buat" %}{% endblock %}
+{% block content %}
+<form method="post" class="space-y-5 max-w-4xl">
+  {% csrf_token %}
+  {{ formset.management_form }}
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+      <i class="ti ti-file-description text-nexus-500"></i>
+      <h3 class="text-sm font-semibold text-gray-900">Informasi Quotation</h3>
+    </div>
+    <div class="p-5 grid grid-cols-2 gap-4">
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Customer <span class="text-red-500">*</span></label>{{ form.customer }}{% if form.customer.errors %}<p class="text-xs text-red-600 mt-1">{{ form.customer.errors.0 }}</p>{% endif %}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Cabang</label>{{ form.branch }}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Berlaku s/d</label>{{ form.valid_until }}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">PPN (%)</label>{{ form.tax_rate }}</div>
+      <div><label class="block text-sm font-medium text-gray-700 mb-1.5">Diskon</label>{{ form.discount_amount }}</div>
+      <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1.5">Catatan</label>{{ form.notes }}</div>
+    </div>
+  </div>
+  <!-- Items -->
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900">Item Quotation</h3>
+      <button type="button" id="add-item" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium flex items-center gap-1"><i class="ti ti-plus"></i> Tambah Baris</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 w-64">Produk</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 w-24">Qty</th>
+          <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 w-20">Satuan</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 w-32">Harga</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 w-20">Diskon%</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 w-28">Subtotal</th>
+          <th class="w-8 px-2"></th>
+        </tr></thead>
+        <tbody id="item-rows">
+          {% for item_form in formset %}
+          <tr class="item-row border-b border-gray-50">
+            {{ item_form.id }}
+            <td class="px-4 py-2">{{ item_form.product }}</td>
+            <td class="px-4 py-2">{{ item_form.quantity }}</td>
+            <td class="px-4 py-2">{{ item_form.unit }}</td>
+            <td class="px-4 py-2">{{ item_form.unit_price }}</td>
+            <td class="px-4 py-2">{{ item_form.discount_percent }}</td>
+            <td class="px-4 py-2 text-right subtotal-cell font-mono text-xs text-gray-600">—</td>
+            <td class="px-2 py-2 text-center"><label>{{ item_form.DELETE }}<i class="ti ti-trash text-gray-300 hover:text-red-500 cursor-pointer text-sm"></i></label></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="flex justify-end px-5 py-4 border-t border-gray-100">
+      <div class="text-right">
+        <span class="text-xs text-gray-400">Estimasi Total (incl. PPN)</span>
+        <div class="text-xl font-bold text-gray-900 mt-0.5" id="grand-total">Rp 0</div>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center justify-between">
+    <a href="{% url 'sales:quotation_list' %}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</a>
+    <button type="submit" class="px-5 py-2 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-check"></i> Buat Quotation</button>
+  </div>
+</form>
+<style>
+  select,input[type=text],input[type=number],input[type=date],textarea{@apply w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition;}
+  input[type=checkbox]{display:none;}
+  tr:has(input[type=checkbox]:checked){opacity:0.4;}
+</style>
+<script>
+function formatIDR(n){if(!n||isNaN(n))return'Rp 0';return'Rp '+parseFloat(n).toLocaleString('id-ID',{maximumFractionDigits:0});}
+function recalcAll(){
+  const tax=parseFloat(document.querySelector('[name=tax_rate]')?.value)||0;
+  const disc=parseFloat(document.querySelector('[name=discount_amount]')?.value)||0;
+  let sub=0;
+  document.querySelectorAll('.item-row').forEach(row=>{
+    if(row.querySelector('input[name$="-DELETE"]')?.checked)return;
+    const qty=parseFloat(row.querySelector('input[name$="-quantity"]')?.value)||0;
+    const price=parseFloat(row.querySelector('input[name$="-unit_price"]')?.value)||0;
+    const dp=parseFloat(row.querySelector('input[name$="-discount_percent"]')?.value)||0;
+    const st=qty*price*(1-dp/100);
+    sub+=st;
+    const cell=row.querySelector('.subtotal-cell');
+    if(cell)cell.textContent=formatIDR(st);
+  });
+  const total=sub+(sub*tax/100)-disc;
+  document.getElementById('grand-total').textContent=formatIDR(total);
+}
+document.querySelectorAll('.item-row input').forEach(i=>i.addEventListener('input',recalcAll));
+document.querySelectorAll('[name=tax_rate],[name=discount_amount]').forEach(i=>i.addEventListener('input',recalcAll));
+let formCount={{ formset.total_form_count }};
+document.getElementById('add-item').addEventListener('click',function(){
+  const tbody=document.getElementById('item-rows');
+  const lastRow=tbody.querySelector('.item-row:last-child');
+  if(!lastRow)return;
+  const newRow=lastRow.cloneNode(true);
+  newRow.querySelectorAll('input,select').forEach(el=>{
+    el.name=el.name.replace(/-\d+-/,`-${formCount}-`);
+    el.id=el.id.replace(/-\d+-/,`-${formCount}-`);
+    if(el.type!=='checkbox')el.value='';
+  });
+  newRow.querySelector('.subtotal-cell').textContent='—';
+  tbody.appendChild(newRow);
+  newRow.querySelectorAll('input').forEach(i=>i.addEventListener('input',recalcAll));
+  document.querySelector('#id_items-TOTAL_FORMS').value=++formCount;
+});
+recalcAll();
+</script>
+{% endblock %}

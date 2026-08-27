@@ -1,0 +1,139 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Purchasing" "Purchase Order" po.number %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- PO Header -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ po.number }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if po.status == 'DRAFT' %}bg-gray-50 text-gray-600 border-gray-200
+              {% elif po.status == 'SENT' %}bg-blue-50 text-blue-700 border-blue-200
+              {% elif po.status == 'COMPLETED' %}bg-green-50 text-green-700 border-green-200
+              {% elif po.status == 'PARTIAL' %}bg-amber-50 text-amber-700 border-amber-200
+              {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+              {{ po.get_status_display }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500">Supplier: <strong>{{ po.supplier.name }}</strong></p>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-400">Total PO</div>
+          <div class="text-xl font-bold text-gray-900">{{ po.total_amount|idr }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">Termasuk PPN {{ po.tax_rate }}%</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100 text-sm">
+        <div><div class="text-xs text-gray-400 mb-0.5">Tanggal Order</div><div class="font-medium">{{ po.order_date|date:"d M Y" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Expected</div><div class="font-medium">{{ po.expected_date|date:"d M Y"|default:"—" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Payment Terms</div><div class="font-medium">{{ po.payment_terms|default:"—" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Gudang Tujuan</div><div class="font-medium">{{ po.warehouse.name|default:"—" }}</div></div>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900">Item PO</h3></div>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Produk</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Qty Order</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Diterima</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Sisa</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Harga</th>
+          <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500">Subtotal</th>
+        </tr></thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for item in items %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3"><div class="font-medium text-gray-900">{{ item.product.name }}</div><div class="text-xs font-mono text-gray-400">{{ item.product.sku }}</div></td>
+            <td class="px-4 py-3 text-right font-mono text-sm">{{ item.quantity|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm text-green-600">{{ item.quantity_received|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm {% if item.quantity_pending > 0 %}text-amber-600{% else %}text-gray-400{% endif %}">{{ item.quantity_pending|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right text-xs font-mono text-gray-600">{{ item.unit_price|idr }}</td>
+            <td class="px-5 py-3 text-right font-mono font-semibold text-gray-900">{{ item.subtotal|idr }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-gray-200 bg-gray-50">
+            <td colspan="5" class="px-5 py-2 text-xs text-gray-500 text-right">Subtotal</td>
+            <td class="px-5 py-2 text-right font-mono text-sm text-gray-700">{{ po.subtotal|idr }}</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td colspan="5" class="px-5 py-2 text-xs text-gray-500 text-right">PPN {{ po.tax_rate }}%</td>
+            <td class="px-5 py-2 text-right font-mono text-sm text-gray-700">{{ po.tax_amount|idr }}</td>
+          </tr>
+          <tr class="bg-gray-50 border-t border-gray-200">
+            <td colspan="5" class="px-5 py-3 text-sm font-semibold text-gray-900 text-right">Total</td>
+            <td class="px-5 py-3 text-right font-bold text-gray-900">{{ po.total_amount|idr }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Goods Receipts -->
+    {% if grs %}
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900">Goods Receipt</h3></div>
+      <div class="divide-y divide-gray-50">
+        {% for gr in grs %}
+        <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition">
+          <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ti ti-package text-green-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-gray-900">{{ gr.number }}</div>
+            <div class="text-xs text-gray-400">{{ gr.receipt_date|date:"d M Y" }} · {{ gr.warehouse.name }}</div>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full border {% if gr.status == 'CONFIRMED' %}bg-green-50 text-green-700 border-green-200{% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">{{ gr.get_status_display }}</span>
+          <a href="{% url 'purchasing:gr_detail' gr.uid %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail →</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+      {% if po.status == 'DRAFT' %}
+      <form method="post" action="{% url 'purchasing:po_send' po.uid %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-send"></i> Tandai Sudah Dikirim ke Supplier
+        </button>
+      </form>
+      {% endif %}
+      {% if po.status in 'SENT,CONFIRMED,PARTIAL' %}
+      <a href="{% url 'purchasing:gr_create' po.uid %}"
+         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition">
+        <i class="ti ti-package"></i> Catat Penerimaan Barang (GR)
+      </a>
+      {% endif %}
+      <a href="{% url 'purchasing:po_list' %}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm transition">
+        <i class="ti ti-arrow-left"></i> Kembali
+      </a>
+    </div>
+
+    <!-- Supplier info -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Info Supplier</div>
+      <div class="space-y-2 text-sm">
+        <div class="font-semibold text-gray-900">{{ po.supplier.name }}</div>
+        {% if po.supplier.contact_person %}<div class="text-gray-500 text-xs">{{ po.supplier.contact_person }}</div>{% endif %}
+        {% if po.supplier.phone %}<div class="text-gray-400 text-xs">{{ po.supplier.phone }}</div>{% endif %}
+        {% if po.supplier.email %}<div class="text-gray-400 text-xs">{{ po.supplier.email }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

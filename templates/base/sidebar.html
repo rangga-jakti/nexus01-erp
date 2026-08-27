@@ -1,0 +1,253 @@
+<!-- Sidebar -->
+<div class="hidden md:flex md:flex-shrink-0">
+  <div class="flex flex-col w-64 bg-gray-900">
+
+    <!-- Logo -->
+    <div class="flex items-center h-16 px-4 bg-gray-950 border-b border-gray-800">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-nexus-600 rounded-lg flex items-center justify-center">
+          <i class="ti ti-building-skyscraper text-white text-sm"></i>
+        </div>
+        <div>
+          <div class="text-white font-semibold text-sm leading-tight">Nexus-01</div>
+          <div class="text-gray-400 text-xs">ERP System</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Company switcher -->
+    {% if active_company %}
+    <div class="px-3 py-3 border-b border-gray-800" x-data="{ open: false }">
+      <div class="flex items-center gap-2 px-2 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer transition"
+           @click="open = !open">
+        <div class="w-7 h-7 bg-nexus-700 rounded flex items-center justify-center flex-shrink-0">
+          <span class="text-white text-xs font-bold">{{ active_company.code|slice:":2" }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-white text-xs font-medium truncate">{{ active_company.name }}</div>
+          <div class="text-gray-400 text-xs">{{ active_company.code }}</div>
+        </div>
+        <i class="ti ti-chevron-down text-gray-400 text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+      </div>
+      {% if user_companies.count > 1 %}
+      <div x-show="open" x-cloak class="mt-1 space-y-0.5" @click.outside="open = false">
+        {% for co in user_companies %}
+        {% if co != active_company %}
+        <form method="post" action="{% url 'core:select_company' %}">
+          {% csrf_token %}
+          <input type="hidden" name="company_id" value="{{ co.pk }}">
+          <button type="submit" class="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-xs text-gray-300 hover:bg-gray-700 transition">
+            <i class="ti ti-building text-gray-500"></i>
+            <span class="truncate">{{ co.name }}</span>
+          </button>
+        </form>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      {% with ns=request.resolver_match.namespace url_name=request.resolver_match.url_name %}
+
+      <!-- Dashboard -->
+      <a href="{% url 'core:dashboard' %}"
+         class="nav-item {% if ns == 'core' and url_name == 'dashboard' %}active{% endif %}">
+        <i class="ti ti-layout-dashboard nav-icon"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <div class="pt-4 pb-1">
+        <p class="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Operasional</p>
+      </div>
+
+      <!-- Inventory -->
+      <div x-data="{ open: {% if ns == 'inventory' %}true{% else %}false{% endif %} }">
+        <button @click="open = !open" class="nav-item w-full {% if ns == 'inventory' %}active{% endif %}">
+          <i class="ti ti-box nav-icon"></i>
+          <span class="flex-1 text-left">Inventory</span>
+          <i class="ti ti-chevron-right text-xs transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+        </button>
+        <div x-show="open" x-cloak class="ml-7 mt-0.5 space-y-0.5">
+          <a href="{% url 'inventory:product_list' %}" class="subnav-item {% if url_name == 'product_list' or url_name == 'product_detail' or url_name == 'product_create' or url_name == 'product_edit' %}subnav-active{% endif %}">Produk</a>
+          <a href="{% url 'inventory:warehouse_list' %}" class="subnav-item {% if url_name == 'warehouse_list' or url_name == 'warehouse_detail' or url_name == 'warehouse_create' or url_name == 'warehouse_edit' %}subnav-active{% endif %}">Gudang</a>
+          <a href="{% url 'inventory:stock_list' %}" class="subnav-item {% if url_name == 'stock_list' or url_name == 'stock_adjust' %}subnav-active{% endif %}">Stok</a>
+          <a href="{% url 'inventory:movement_list' %}" class="subnav-item {% if url_name == 'movement_list' %}subnav-active{% endif %}">Mutasi Stok</a>
+        </div>
+      </div>
+
+      <!-- Purchasing -->
+      <div x-data="{ open: {% if ns == 'purchasing' %}true{% else %}false{% endif %} }">
+        <button @click="open = !open" class="nav-item w-full {% if ns == 'purchasing' %}active{% endif %}">
+          <i class="ti ti-shopping-cart nav-icon"></i>
+          <span class="flex-1 text-left">Purchasing</span>
+          <i class="ti ti-chevron-right text-xs transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+        </button>
+        <div x-show="open" x-cloak class="ml-7 mt-0.5 space-y-0.5">
+          <a href="{% url 'purchasing:supplier_list' %}" class="subnav-item {% if url_name == 'supplier_list' or url_name == 'supplier_create' or url_name == 'supplier_edit' %}subnav-active{% endif %}">Supplier</a>
+          <a href="{% url 'purchasing:pr_list' %}" class="subnav-item {% if url_name == 'pr_list' or url_name == 'pr_detail' or url_name == 'pr_create' %}subnav-active{% endif %}">Purchase Request</a>
+          <a href="{% url 'purchasing:po_list' %}" class="subnav-item {% if url_name == 'po_list' or url_name == 'po_detail' or url_name == 'po_create_from_pr' %}subnav-active{% endif %}">Purchase Order</a>
+          <a href="{% url 'purchasing:gr_list' %}" class="subnav-item {% if url_name == 'gr_list' or url_name == 'gr_detail' or url_name == 'gr_create' %}subnav-active{% endif %}">Goods Receipt</a>
+        </div>
+      </div>
+
+      <!-- Sales -->
+      <div x-data="{ open: {% if ns == 'sales' %}true{% else %}false{% endif %} }">
+        <button @click="open = !open" class="nav-item w-full {% if ns == 'sales' %}active{% endif %}">
+          <i class="ti ti-receipt nav-icon"></i>
+          <span class="flex-1 text-left">Sales</span>
+          <i class="ti ti-chevron-right text-xs transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+        </button>
+        <div x-show="open" x-cloak class="ml-7 mt-0.5 space-y-0.5">
+          <a href="{% url 'sales:customer_list' %}" class="subnav-item {% if url_name == 'customer_list' or url_name == 'customer_create' or url_name == 'customer_edit' %}subnav-active{% endif %}">Customer</a>
+          <a href="{% url 'sales:quotation_list' %}" class="subnav-item {% if url_name == 'quotation_list' or url_name == 'quotation_detail' or url_name == 'quotation_create' %}subnav-active{% endif %}">Quotation</a>
+          <a href="{% url 'sales:so_list' %}" class="subnav-item {% if url_name == 'so_list' or url_name == 'so_detail' or url_name == 'so_create' %}subnav-active{% endif %}">Sales Order</a>
+          <a href="{% url 'sales:delivery_list' %}" class="subnav-item {% if url_name == 'delivery_list' or url_name == 'delivery_detail' or url_name == 'delivery_create' %}subnav-active{% endif %}">Delivery</a>
+        </div>
+      </div>
+
+      <!-- Finance -->
+      <div x-data="{ open: {% if ns == 'finance' %}true{% else %}false{% endif %} }">
+        <button @click="open = !open" class="nav-item w-full {% if ns == 'finance' %}active{% endif %}">
+          <i class="ti ti-cash nav-icon"></i>
+          <span class="flex-1 text-left">Finance</span>
+          <i class="ti ti-chevron-right text-xs transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+        </button>
+        <div x-show="open" x-cloak class="ml-7 mt-0.5 space-y-0.5">
+          <a href="{% url 'finance:invoice_list' %}" class="subnav-item {% if url_name == 'invoice_list' or url_name == 'invoice_detail' %}subnav-active{% endif %}">Invoice</a>
+          <a href="{% url 'finance:payment_list' %}" class="subnav-item {% if url_name == 'payment_list' %}subnav-active{% endif %}">Payment</a>
+          <a href="{% url 'finance:expense_list' %}" class="subnav-item {% if url_name == 'expense_list' or url_name == 'expense_create' %}subnav-active{% endif %}">Expense</a>
+        </div>
+      </div>
+
+      <!-- HR -->
+      <div x-data="{ open: {% if ns == 'hr' %}true{% else %}false{% endif %} }">
+        <button @click="open = !open" class="nav-item w-full {% if ns == 'hr' %}active{% endif %}">
+          <i class="ti ti-users-group nav-icon"></i>
+          <span class="flex-1 text-left">Human Resources</span>
+          <i class="ti ti-chevron-right text-xs transition-transform duration-200" :class="open ? 'rotate-90' : ''"></i>
+        </button>
+        <div x-show="open" x-cloak class="ml-7 mt-0.5 space-y-0.5">
+          <a href="{% url 'hr:employee_list' %}" class="subnav-item {% if url_name == 'employee_list' or url_name == 'employee_detail' or url_name == 'employee_create' or url_name == 'employee_edit' %}subnav-active{% endif %}">Karyawan</a>
+          <a href="{% url 'hr:attendance_list' %}" class="subnav-item {% if url_name == 'attendance_list' or url_name == 'attendance_create' or url_name == 'attendance_bulk' %}subnav-active{% endif %}">Absensi</a>
+          <a href="{% url 'hr:leave_list' %}" class="subnav-item {% if url_name == 'leave_list' or url_name == 'leave_detail' or url_name == 'leave_create' %}subnav-active{% endif %}">Cuti</a>
+          <a href="{% url 'hr:payroll_list' %}" class="subnav-item {% if url_name == 'payroll_list' or url_name == 'payroll_detail' or url_name == 'payroll_create' or url_name == 'payroll_detail_employee' %}subnav-active{% endif %}">Payroll</a>
+        </div>
+      </div>
+
+      <!-- Reports -->
+      <div class="pt-4 pb-1">
+        <p class="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Laporan</p>
+      </div>
+
+      <a href="{% url 'reports:overview' %}" class="nav-item {% if ns == 'reports' %}active{% endif %}">
+        <i class="ti ti-chart-bar nav-icon"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- System -->
+      <div class="pt-4 pb-1">
+        <p class="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sistem</p>
+      </div>
+
+      <a href="{% url 'accounts:user_list' %}" class="nav-item {% if ns == 'accounts' %}active{% endif %}">
+        <i class="ti ti-users nav-icon"></i>
+        <span>Users & Roles</span>
+      </a>
+
+      <a href="{% url 'organization:company_detail' %}" class="nav-item {% if ns == 'organization' %}active{% endif %}">
+        <i class="ti ti-building nav-icon"></i>
+        <span>Organization</span>
+      </a>
+
+      <a href="{% url 'core:audit_log' %}" class="nav-item {% if url_name == 'audit_log' %}active{% endif %}">
+        <i class="ti ti-shield-check nav-icon"></i>
+        <span>Audit Log</span>
+      </a>
+
+      {% endwith %}
+    </nav>
+
+    <!-- User info -->
+    <div class="px-3 py-3 border-t border-gray-800" x-data="{ open: false }">
+      <div class="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-800 cursor-pointer transition"
+           @click="open = !open">
+        <div class="w-8 h-8 bg-nexus-600 rounded-full flex items-center justify-center flex-shrink-0">
+          {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" class="w-8 h-8 rounded-full object-cover" alt="">
+          {% else %}
+            <span class="text-white text-xs font-semibold">
+              {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+            </span>
+          {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-white text-xs font-medium truncate">{{ user.get_full_name|default:user.username }}</div>
+          <div class="text-gray-400 text-xs truncate">{{ user.email }}</div>
+        </div>
+        <i class="ti ti-dots-vertical text-gray-400 text-xs"></i>
+      </div>
+      <div x-show="open" x-cloak class="mt-1 space-y-0.5" @click.outside="open = false">
+        <a href="{% url 'accounts:profile' %}"
+           class="flex items-center gap-2 px-2 py-1.5 rounded text-xs text-gray-300 hover:bg-gray-800 transition">
+          <i class="ti ti-user text-gray-500"></i> Profil Saya
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded text-xs text-red-400 hover:bg-gray-800 transition">
+            <i class="ti ti-logout text-red-500"></i> Logout
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    transition: all 0.15s;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { color: #fff; background: #1f2937; }
+  .nav-item.active { background: #4f46e5; color: #fff; }
+  .nav-icon { font-size: 1rem; width: 1.25rem; flex-shrink: 0; }
+  .subnav-item {
+    display: block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    transition: all 0.15s;
+  }
+  .subnav-item:hover { color: #fff; background: #1f2937; }
+  .subnav-active {
+    color: #fff !important;
+    background: #374151;
+    font-weight: 500;
+    position: relative;
+  }
+  .subnav-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: #6366f1;
+    border-radius: 0 2px 2px 0;
+  }
+</style>

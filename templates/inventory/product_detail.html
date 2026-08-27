@@ -1,0 +1,257 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+
+{% block breadcrumb %}{% breadcrumb "Inventory" "Produk" product.name %}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left: Product info -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Product card -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-start gap-5 p-6">
+        <!-- Image -->
+        <div class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {% if product.image %}
+            <img src="{{ product.image.url }}" class="w-20 h-20 object-cover">
+          {% else %}
+            <i class="ti ti-box text-gray-300 text-3xl"></i>
+          {% endif %}
+        </div>
+        <!-- Info -->
+        <div class="flex-1">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">{{ product.name }}</h2>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ product.sku }}</span>
+                {% if product.barcode %}
+                <span class="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ product.barcode }}</span>
+                {% endif %}
+                <span class="text-xs px-2 py-0.5 rounded-full border
+                  {% if product.product_type == 'STORABLE' %}bg-blue-50 text-blue-700 border-blue-200
+                  {% elif product.product_type == 'CONSUMABLE' %}bg-purple-50 text-purple-700 border-purple-200
+                  {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+                  {{ product.get_product_type_display }}
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <a href="{% url 'inventory:product_edit' product.uid %}"
+                 class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+                <i class="ti ti-pencil"></i> Edit
+              </a>
+            </div>
+          </div>
+
+          {% if product.description %}
+          <p class="text-sm text-gray-500 mt-3">{{ product.description }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Attributes grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border-t border-gray-100">
+        <div class="px-5 py-4 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Harga Beli</div>
+          <div class="text-sm font-semibold text-gray-900">{{ product.purchase_price|idr }}</div>
+        </div>
+        <div class="px-5 py-4 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Harga Jual</div>
+          <div class="text-sm font-semibold text-gray-900">{{ product.selling_price|idr }}</div>
+        </div>
+        <div class="px-5 py-4 border-r border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Stok Minimum</div>
+          <div class="text-sm font-semibold text-gray-900">
+            {{ product.minimum_stock|floatformat:"-2" }}
+            {% if product.unit %}{{ product.unit.symbol|default:product.unit.code }}{% endif %}
+          </div>
+        </div>
+        <div class="px-5 py-4">
+          <div class="text-xs text-gray-400 mb-1">Reorder Point</div>
+          <div class="text-sm font-semibold text-gray-900">
+            {{ product.reorder_point|floatformat:"-2" }}
+            {% if product.unit %}{{ product.unit.symbol|default:product.unit.code }}{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock per warehouse -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Stok per Gudang</h3>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full border
+          {{ total_stock|stock_bg:product.minimum_stock }}">
+          Total: {{ total_stock|floatformat:"-2" }}
+          {% if product.unit %}{{ product.unit.symbol|default:product.unit.code }}{% endif %}
+        </span>
+      </div>
+      {% if stocks %}
+      <div class="divide-y divide-gray-50">
+        {% for s in stocks %}
+        <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition">
+          <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ti ti-building-warehouse text-gray-400 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-gray-800">{{ s.warehouse.name }}</div>
+            <div class="text-xs text-gray-400">{{ s.warehouse.code }}{% if s.warehouse.branch %} · {{ s.warehouse.branch.name }}{% endif %}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-semibold {{ s.quantity|stock_color:product.minimum_stock }}">
+              {{ s.quantity|floatformat:"-2" }}
+              {% if product.unit %}<span class="text-xs font-normal text-gray-400">{{ product.unit.symbol|default:product.unit.code }}</span>{% endif %}
+            </div>
+            {% if s.reserved_quantity > 0 %}
+            <div class="text-xs text-gray-400">Reserved: {{ s.reserved_quantity|floatformat:"-2" }}</div>
+            {% endif %}
+          </div>
+          <a href="{% url 'inventory:stock_adjust' s.pk %}"
+             class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-100 text-gray-500 transition flex-shrink-0">
+            Adjust
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-8 text-center text-sm text-gray-400">
+        Belum ada stok di gudang manapun.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent movements -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Mutasi Stok Terbaru</h3>
+        <a href="{% url 'inventory:movement_list' %}?product={{ product.pk }}"
+           class="text-xs text-nexus-600 hover:text-nexus-700">Lihat semua →</a>
+      </div>
+      {% if movements %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-gray-50">
+              <th class="text-left px-5 py-2.5 text-gray-400 font-medium">Waktu</th>
+              <th class="text-left px-4 py-2.5 text-gray-400 font-medium">Tipe</th>
+              <th class="text-left px-4 py-2.5 text-gray-400 font-medium">Gudang</th>
+              <th class="text-left px-4 py-2.5 text-gray-400 font-medium">Referensi</th>
+              <th class="text-right px-4 py-2.5 text-gray-400 font-medium">Qty</th>
+              <th class="text-right px-5 py-2.5 text-gray-400 font-medium">Saldo</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            {% for m in movements %}
+            <tr class="hover:bg-gray-50 transition">
+              <td class="px-5 py-2.5 text-gray-500">{{ m.created_at|date:"d/m/y H:i" }}</td>
+              <td class="px-4 py-2.5">
+                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                  {{ m.get_movement_type_display }}
+                </span>
+              </td>
+              <td class="px-4 py-2.5 text-gray-500">{{ m.warehouse.code }}</td>
+              <td class="px-4 py-2.5 text-gray-400 font-mono">{{ m.reference|default:"—" }}</td>
+              <td class="px-4 py-2.5 text-right font-mono font-semibold {{ m.quantity|movement_color }}">
+                {{ m.quantity|movement_sign }}
+              </td>
+              <td class="px-5 py-2.5 text-right font-mono text-gray-600">
+                {{ m.quantity_after|floatformat:"-2" }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-8 text-center text-sm text-gray-400">Belum ada mutasi stok.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Right: sidebar info -->
+  <div class="space-y-4">
+
+    <!-- Total stock summary -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 mb-3 uppercase tracking-wide font-medium">Ringkasan Stok</div>
+      <div class="text-4xl font-bold mb-1
+        {{ total_stock|stock_color:product.minimum_stock }}">
+        {{ total_stock|floatformat:"-2" }}
+      </div>
+      <div class="text-xs text-gray-400">
+        {% if product.unit %}{{ product.unit.name }}{% else %}unit{% endif %} tersedia
+      </div>
+
+      {% if product.is_low_stock %}
+      <div class="mt-3 flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+        <i class="ti ti-alert-triangle text-amber-500 text-sm"></i>
+        <span class="text-xs text-amber-700 font-medium">Di bawah stok minimum ({{ product.minimum_stock|floatformat:"-2" }})</span>
+      </div>
+      {% endif %}
+
+      {% if product.needs_reorder %}
+      <div class="mt-2 flex items-center gap-2 px-3 py-2 bg-orange-50 rounded-lg border border-orange-200">
+        <i class="ti ti-shopping-cart text-orange-500 text-sm"></i>
+        <span class="text-xs text-orange-700 font-medium">Perlu reorder (titik: {{ product.reorder_point|floatformat:"-2" }})</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Category & details -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 mb-3 uppercase tracking-wide font-medium">Info Produk</div>
+      <div class="space-y-2.5 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-400">Kategori</span>
+          <span class="text-gray-700 font-medium">{{ product.category.name|default:"—" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Satuan</span>
+          <span class="text-gray-700 font-medium">{{ product.unit.name|default:"—" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Berat</span>
+          <span class="text-gray-700 font-medium">
+            {% if product.weight %}{{ product.weight }} kg{% else %}—{% endif %}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Dibuat</span>
+          <span class="text-gray-700 font-medium">{{ product.created_at|date:"d M Y" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Dibuat oleh</span>
+          <span class="text-gray-700 font-medium">{{ product.created_by.get_full_name|default:"—" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 mb-3 uppercase tracking-wide font-medium">Aksi</div>
+      <div class="space-y-2">
+        <a href="{% url 'inventory:product_edit' product.uid %}"
+           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-sm text-gray-600">
+          <i class="ti ti-pencil text-gray-400"></i>
+          Edit Produk
+        </a>
+        <a href="{% url 'purchasing:pr_create' %}"
+           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-nexus-50 hover:border-nexus-200 transition text-sm text-gray-600">
+          <i class="ti ti-shopping-cart text-gray-400"></i>
+          Buat Purchase Request
+        </a>
+        <a href="{% url 'inventory:movement_list' %}?q={{ product.sku }}"
+           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-sm text-gray-600">
+          <i class="ti ti-arrows-exchange text-gray-400"></i>
+          Lihat Semua Mutasi
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

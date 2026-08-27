@@ -1,0 +1,88 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Cuti" leave.employee.full_name %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-5">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ leave.employee.full_name }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if leave.status == 'PENDING' %}bg-amber-50 text-amber-700 border-amber-200
+              {% elif leave.status == 'APPROVED' %}bg-green-50 text-green-700 border-green-200
+              {% elif leave.status == 'REJECTED' %}bg-red-50 text-red-600 border-red-200
+              {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+              {{ leave.get_status_display }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500">{{ leave.leave_type.name }}</p>
+        </div>
+        <div class="text-right">
+          <div class="text-3xl font-bold text-gray-900">{{ leave.total_days }}</div>
+          <div class="text-xs text-gray-400">hari kerja</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-gray-100 text-sm">
+        <div><div class="text-xs text-gray-400 mb-0.5">Tanggal Mulai</div><div class="font-medium">{{ leave.start_date|date:"d M Y" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Tanggal Selesai</div><div class="font-medium">{{ leave.end_date|date:"d M Y" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Diajukan</div><div class="font-medium">{{ leave.created_at|date:"d M Y" }}</div></div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-gray-100">
+        <div class="text-xs text-gray-400 mb-1">Alasan</div>
+        <p class="text-sm text-gray-700">{{ leave.reason }}</p>
+      </div>
+      {% if leave.rejection_reason %}
+      <div class="mt-3 flex items-start gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+        <i class="ti ti-circle-x text-red-500 mt-0.5"></i>
+        <div><div class="text-xs font-semibold text-red-700 mb-0.5">Alasan Penolakan</div><p class="text-sm text-red-600">{{ leave.rejection_reason }}</p></div>
+      </div>
+      {% endif %}
+      {% if leave.approved_by %}
+      <div class="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200 text-xs text-green-700">
+        <i class="ti ti-check text-green-500"></i>
+        {{ leave.get_status_display }} oleh {{ leave.approved_by.get_full_name }} pada {{ leave.approved_at|date:"d M Y H:i" }}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if balance %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Saldo Cuti {{ leave.start_date.year }}</div>
+      <div class="flex items-center gap-6">
+        <div class="text-center"><div class="text-2xl font-bold text-gray-900">{{ balance.total_days }}</div><div class="text-xs text-gray-400">Total</div></div>
+        <div class="text-center"><div class="text-2xl font-bold text-amber-600">{{ balance.used_days }}</div><div class="text-xs text-gray-400">Dipakai</div></div>
+        <div class="text-center"><div class="text-2xl font-bold text-green-600">{{ balance.remaining_days }}</div><div class="text-xs text-gray-400">Sisa</div></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+      {% if leave.status == 'DRAFT' %}
+      <form method="post" action="{% url 'hr:leave_submit' leave.uid %}">{% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-send"></i> Submit untuk Approval</button>
+      </form>
+      {% endif %}
+      {% if leave.status == 'PENDING' %}
+      <form method="post" action="{% url 'hr:leave_approve' leave.uid %}">{% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-check"></i> Approve</button>
+      </form>
+      <div x-data="{ open: false }">
+        <button @click="open = !open" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition"><i class="ti ti-x"></i> Tolak</button>
+        <div x-show="open" x-cloak class="mt-2">
+          <form method="post" action="{% url 'hr:leave_reject' leave.uid %}">{% csrf_token %}
+            <textarea name="reason" rows="2" required placeholder="Alasan penolakan..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-2"></textarea>
+            <button type="submit" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Konfirmasi Tolak</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+      <a href="{% url 'hr:leave_list' %}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm transition"><i class="ti ti-arrow-left"></i> Kembali</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

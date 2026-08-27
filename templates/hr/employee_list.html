@@ -1,0 +1,161 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Karyawan" %}{% endblock %}
+{% block content %}
+
+<!-- Stats -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-nexus-50 rounded-xl flex items-center justify-center">
+      <i class="ti ti-users text-nexus-600 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-gray-900">{{ stats.total }}</div>
+      <div class="text-xs text-gray-400">Total Karyawan</div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+      <i class="ti ti-user-check text-green-600 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-gray-900">{{ stats.permanent }}</div>
+      <div class="text-xs text-gray-400">Karyawan Tetap</div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+      <i class="ti ti-file-time text-blue-600 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-gray-900">{{ stats.contract }}</div>
+      <div class="text-xs text-gray-400">Kontrak</div>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center gap-4">
+    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+      <i class="ti ti-user-exclamation text-amber-600 text-lg"></i>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-gray-900">{{ stats.probation }}</div>
+      <div class="text-xs text-gray-400">Percobaan</div>
+    </div>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <h2 class="text-sm font-semibold text-gray-900">Daftar Karyawan</h2>
+    <a href="{% url 'hr:employee_create' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 hover:bg-nexus-700 text-white text-sm font-medium rounded-lg transition">
+      <i class="ti ti-plus"></i> Tambah Karyawan
+    </a>
+  </div>
+
+  <!-- Filter -->
+  <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+    <form method="get" class="flex items-center gap-3 flex-wrap">
+      <div class="relative flex-1 min-w-[200px]">
+        <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+        <input type="text" name="q" value="{{ q }}" placeholder="Cari nama, NIK, email..."
+               class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 bg-white">
+      </div>
+      <select name="dept" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Departemen</option>
+        {% for dept in departments %}
+        <option value="{{ dept.pk }}" {% if selected_dept == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Status</option>
+        {% for val, label in employment_statuses %}
+        <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="px-4 py-2 bg-nexus-600 text-white text-sm rounded-lg hover:bg-nexus-700 transition">Filter</button>
+      {% if q or selected_dept or selected_status %}
+      <a href="{% url 'hr:employee_list' %}" class="text-xs text-gray-400 hover:text-gray-600"><i class="ti ti-x"></i> Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if employees %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-gray-100">
+        <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Karyawan</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Departemen & Jabatan</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kontak</th>
+        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Masa Kerja</th>
+        <th class="px-4 py-3"></th>
+      </tr></thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for emp in employees %}
+        <tr class="hover:bg-gray-50 transition group">
+          <td class="px-5 py-3.5">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0
+                {% if emp.gender == 'M' %}bg-blue-100{% else %}bg-pink-100{% endif %}">
+                {% if emp.photo %}
+                  <img src="{{ emp.photo.url }}" class="w-9 h-9 rounded-full object-cover">
+                {% else %}
+                  <span class="text-xs font-bold {% if emp.gender == 'M' %}text-blue-600{% else %}text-pink-600{% endif %}">
+                    {{ emp.first_name|slice:":1"|upper }}{{ emp.last_name|slice:":1"|upper }}
+                  </span>
+                {% endif %}
+              </div>
+              <div>
+                <a href="{% url 'hr:employee_detail' emp.uid %}"
+                   class="font-medium text-gray-900 hover:text-nexus-600 transition">{{ emp.full_name }}</a>
+                <div class="text-xs font-mono text-gray-400">{{ emp.employee_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3.5">
+            <div class="text-sm text-gray-700">{{ emp.department.name|default:"—" }}</div>
+            <div class="text-xs text-gray-400">{{ emp.position.name|default:"—" }}</div>
+          </td>
+          <td class="px-4 py-3.5">
+            {% if emp.email %}<div class="text-xs text-gray-500">{{ emp.email }}</div>{% endif %}
+            {% if emp.phone %}<div class="text-xs text-gray-400">{{ emp.phone }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3.5 text-center">
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if emp.employment_status == 'PERMANENT' %}bg-green-50 text-green-700 border-green-200
+              {% elif emp.employment_status == 'CONTRACT' %}bg-blue-50 text-blue-700 border-blue-200
+              {% elif emp.employment_status == 'PROBATION' %}bg-amber-50 text-amber-700 border-amber-200
+              {% elif emp.employment_status == 'INTERNSHIP' %}bg-purple-50 text-purple-700 border-purple-200
+              {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+              {{ emp.get_employment_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3.5 text-right text-xs text-gray-500">{{ emp.years_of_service }} tahun</td>
+          <td class="px-4 py-3.5 text-right opacity-0 group-hover:opacity-100 transition">
+            <a href="{% url 'hr:employee_detail' emp.uid %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if employees.has_other_pages %}
+  <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+    <span class="text-xs text-gray-400">Hal {{ employees.number }} / {{ employees.paginator.num_pages }}</span>
+    <div class="flex gap-1">
+      {% if employees.has_previous %}<a href="?page={{ employees.previous_page_number }}&q={{ q }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-left"></i></a>{% endif %}
+      {% if employees.has_next %}<a href="?page={{ employees.next_page_number }}&q={{ q }}" class="px-2 py-1 text-xs border rounded hover:bg-gray-50"><i class="ti ti-chevron-right"></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="py-16 text-center">
+    <i class="ti ti-users text-gray-200 text-5xl mb-3 block"></i>
+    <p class="text-sm text-gray-400 mb-4">Belum ada karyawan.</p>
+    <a href="{% url 'hr:employee_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 text-white text-sm font-medium rounded-lg">
+      <i class="ti ti-plus"></i> Tambah Karyawan Pertama
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

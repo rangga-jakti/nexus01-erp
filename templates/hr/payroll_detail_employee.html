@@ -1,0 +1,79 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Payroll" payroll.name emp.full_name %}{% endblock %}
+{% block content %}
+<div class="max-w-2xl">
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-5">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900">{{ emp.full_name }}</h2>
+        <p class="text-xs text-gray-400">{{ payroll.name }} · {{ payroll.period_month|stringformat:"02d" }}/{{ payroll.period_year }}</p>
+      </div>
+      <a href="{% url 'hr:payslip_pdf' payroll.uid emp.uid %}"
+         class="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-medium rounded-lg transition">
+        <i class="ti ti-file-type-pdf"></i> Download Slip Gaji
+      </a>
+    </div>
+
+    <!-- Kehadiran -->
+    <div class="grid grid-cols-5 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50">
+      <div class="px-4 py-3 text-center"><div class="text-lg font-bold text-gray-900">{{ detail.present_days }}</div><div class="text-xs text-gray-400">Hadir</div></div>
+      <div class="px-4 py-3 text-center"><div class="text-lg font-bold text-blue-600">{{ detail.leave_days }}</div><div class="text-xs text-gray-400">Cuti</div></div>
+      <div class="px-4 py-3 text-center"><div class="text-lg font-bold text-red-500">{{ detail.absent_days }}</div><div class="text-xs text-gray-400">Absen</div></div>
+      <div class="px-4 py-3 text-center"><div class="text-lg font-bold text-amber-600">{{ detail.late_minutes }}</div><div class="text-xs text-gray-400">Mnt Terlambat</div></div>
+      <div class="px-4 py-3 text-center"><div class="text-lg font-bold text-green-600">{{ detail.overtime_minutes }}</div><div class="text-xs text-gray-400">Mnt Lembur</div></div>
+    </div>
+
+    <!-- Komponen gaji -->
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-gray-100 bg-gray-50">
+        <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Komponen</th>
+        <th class="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">Tipe</th>
+        <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500">Jumlah</th>
+      </tr></thead>
+      <tbody class="divide-y divide-gray-50">
+        <!-- Gaji pokok -->
+        <tr class="bg-nexus-50/50">
+          <td class="px-5 py-3 font-semibold text-gray-900">Gaji Pokok</td>
+          <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded bg-nexus-100 text-nexus-700">Pokok</span></td>
+          <td class="px-5 py-3 text-right font-mono font-bold text-gray-900">{{ detail.basic_salary|idr }}</td>
+        </tr>
+        {% for item in items %}
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-5 py-3 text-gray-800">{{ item.component.name }}</td>
+          <td class="px-4 py-3">
+            <span class="text-xs px-2 py-0.5 rounded {% if item.component.component_type == 'EARNING' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+              {{ item.component.get_component_type_display }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-right font-mono {% if item.component.component_type == 'EARNING' %}text-green-600{% else %}text-red-600{% endif %}">
+            {% if item.component.component_type == 'EARNING' %}+{% else %}-{% endif %}{{ item.amount|idr }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="border-t-2 border-gray-200 bg-gray-50">
+          <td colspan="2" class="px-5 py-3 text-xs text-gray-500">Gaji Kotor (Pokok + Tunjangan)</td>
+          <td class="px-5 py-3 text-right font-mono text-sm text-gray-700">{{ detail.gross_salary|idr }}</td>
+        </tr>
+        <tr class="bg-gray-50">
+          <td colspan="2" class="px-5 py-3 text-xs text-gray-500">Total Potongan</td>
+          <td class="px-5 py-3 text-right font-mono text-sm text-red-600">-{{ detail.total_deductions|idr }}</td>
+        </tr>
+        <tr class="bg-nexus-50 border-t-2 border-nexus-200">
+          <td colspan="2" class="px-5 py-4 text-sm font-bold text-nexus-900">GAJI BERSIH (Take Home Pay)</td>
+          <td class="px-5 py-4 text-right font-mono font-bold text-xl text-nexus-700">{{ detail.net_salary|idr }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="flex justify-between">
+    <a href="{% url 'hr:payroll_detail' payroll.uid %}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50"><i class="ti ti-arrow-left"></i> Kembali ke Payroll</a>
+    <a href="{% url 'hr:payslip_pdf' payroll.uid emp.uid %}" class="inline-flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 text-sm font-medium rounded-lg">
+      <i class="ti ti-file-type-pdf"></i> Download Slip Gaji PDF
+    </a>
+  </div>
+</div>
+{% endblock %}

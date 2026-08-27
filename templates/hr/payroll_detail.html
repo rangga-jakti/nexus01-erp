@@ -1,0 +1,152 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "HR" "Payroll" payroll.name %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Main -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Header -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ payroll.name }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if payroll.status == 'DRAFT' %}bg-gray-50 text-gray-600 border-gray-200
+              {% elif payroll.status == 'CALCULATED' %}bg-blue-50 text-blue-700 border-blue-200
+              {% elif payroll.status == 'APPROVED' %}bg-green-50 text-green-700 border-green-200
+              {% elif payroll.status == 'PAID' %}bg-nexus-50 text-nexus-700 border-nexus-200
+              {% else %}bg-gray-50 text-gray-400 border-gray-200{% endif %}">
+              {{ payroll.get_status_display }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500">Periode: {{ payroll.period_month|stringformat:"02d" }}/{{ payroll.period_year }}
+            {% if payroll.payment_date %} · Bayar: {{ payroll.payment_date|date:"d M Y" }}{% endif %}
+          </p>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-400">Total Gaji Bersih</div>
+          <div class="text-2xl font-bold text-gray-900">{{ payroll.total_net_salary|idr }}</div>
+          <div class="text-xs text-gray-400 mt-0.5">{{ payroll.employee_count }} karyawan</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-0 border-t border-gray-100 mt-5">
+        <div class="px-4 py-3 border-r border-gray-100 text-center">
+          <div class="text-xs text-gray-400 mb-0.5">Total Gaji Pokok</div>
+          <div class="text-sm font-semibold text-gray-900">{{ payroll.total_basic_salary|idr }}</div>
+        </div>
+        <div class="px-4 py-3 border-r border-gray-100 text-center">
+          <div class="text-xs text-gray-400 mb-0.5">Total Tunjangan</div>
+          <div class="text-sm font-semibold text-green-600">+{{ payroll.total_earnings|idr }}</div>
+        </div>
+        <div class="px-4 py-3 text-center">
+          <div class="text-xs text-gray-400 mb-0.5">Total Potongan</div>
+          <div class="text-sm font-semibold text-red-500">-{{ payroll.total_deductions|idr }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daftar karyawan -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Detail per Karyawan</h3>
+      </div>
+      {% if details %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="border-b border-gray-100 bg-gray-50">
+            <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Karyawan</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Gaji Pokok</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Tunjangan</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Potongan</th>
+            <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Gaji Bersih</th>
+            <th class="text-center px-4 py-2.5 text-xs font-semibold text-gray-500">Hadir</th>
+            <th class="px-4 py-2.5"></th>
+          </tr></thead>
+          <tbody class="divide-y divide-gray-50">
+            {% for d in details %}
+            <tr class="hover:bg-gray-50 transition">
+              <td class="px-5 py-3">
+                <a href="{% url 'hr:employee_detail' d.employee.uid %}" class="font-medium text-gray-900 hover:text-nexus-600 transition">{{ d.employee.full_name }}</a>
+                <div class="text-xs text-gray-400">{{ d.employee.position.name|default:"—" }}</div>
+              </td>
+              <td class="px-4 py-3 text-right font-mono text-xs text-gray-600">{{ d.basic_salary|idr }}</td>
+              <td class="px-4 py-3 text-right font-mono text-xs text-green-600">+{{ d.total_earnings|idr }}</td>
+              <td class="px-4 py-3 text-right font-mono text-xs text-red-500">-{{ d.total_deductions|idr }}</td>
+              <td class="px-4 py-3 text-right font-mono font-bold text-gray-900">{{ d.net_salary|idr }}</td>
+              <td class="px-4 py-3 text-center text-xs text-gray-500">{{ d.present_days }}h</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center gap-2 justify-end">
+                  <a href="{% url 'hr:payroll_detail_employee' payroll.uid d.employee.uid %}"
+                     class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail</a>
+                  <a href="{% url 'hr:payslip_pdf' payroll.uid d.employee.uid %}"
+                     class="text-xs text-red-600 hover:text-red-700 flex items-center gap-0.5">
+                    <i class="ti ti-file-type-pdf text-xs"></i> PDF
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="py-10 text-center text-sm text-gray-400">
+        Payroll belum dihitung. Klik <strong>Hitung Payroll</strong> untuk memulai.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+
+      {% if payroll.status == 'DRAFT' or payroll.status == 'CALCULATED' %}
+      <form method="post" action="{% url 'hr:payroll_calculate' payroll.uid %}">{% csrf_token %}
+        <button type="submit"
+                onclick="return confirm('Hitung payroll untuk semua karyawan aktif?')"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-calculator"></i>
+          {% if payroll.status == 'CALCULATED' %}Hitung Ulang{% else %}Hitung Payroll{% endif %}
+        </button>
+      </form>
+      {% endif %}
+
+      {% if payroll.status == 'CALCULATED' %}
+      <form method="post" action="{% url 'hr:payroll_approve' payroll.uid %}">{% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-check"></i> Approve Payroll
+        </button>
+      </form>
+      {% endif %}
+
+      {% if details %}
+      <a href="{% url 'hr:payroll_export_excel' payroll.uid %}"
+         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-green-200 text-green-700 bg-green-50 hover:bg-green-100 rounded-lg text-sm font-medium transition">
+        <i class="ti ti-file-spreadsheet"></i> Export Excel
+      </a>
+      {% endif %}
+
+      <a href="{% url 'hr:payroll_list' %}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm transition">
+        <i class="ti ti-arrow-left"></i> Kembali
+      </a>
+    </div>
+
+    <!-- Summary box -->
+    {% if payroll.approved_by %}
+    <div class="bg-green-50 border border-green-200 rounded-xl p-5">
+      <div class="text-xs text-green-600 uppercase tracking-wide font-medium mb-2">Disetujui</div>
+      <div class="text-sm font-medium text-green-900">{{ payroll.approved_by.get_full_name }}</div>
+      <div class="text-xs text-green-600 mt-0.5">{{ payroll.approved_at|date:"d M Y H:i" }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

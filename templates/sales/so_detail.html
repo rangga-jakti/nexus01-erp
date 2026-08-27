@@ -1,0 +1,95 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Sales" "Sales Order" so.number %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-5">
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ so.number }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if so.status == 'DRAFT' %}bg-gray-50 text-gray-600 border-gray-200
+              {% elif so.status == 'CONFIRMED' %}bg-blue-50 text-blue-700 border-blue-200
+              {% elif so.status == 'COMPLETED' %}bg-green-50 text-green-700 border-green-200
+              {% elif so.status == 'PARTIAL' %}bg-amber-50 text-amber-700 border-amber-200
+              {% else %}bg-gray-50 text-gray-400 border-gray-200{% endif %}">{{ so.get_status_display }}</span>
+          </div>
+          <p class="text-sm text-gray-500">Customer: <strong>{{ so.customer.name }}</strong></p>
+        </div>
+        <div class="text-right"><div class="text-xs text-gray-400">Total</div><div class="text-xl font-bold text-gray-900">{{ so.total_amount|idr }}</div></div>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-100 text-sm">
+        <div><div class="text-xs text-gray-400 mb-0.5">Tanggal Order</div><div class="font-medium">{{ so.order_date|date:"d M Y" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Expected Delivery</div><div class="font-medium">{{ so.expected_delivery_date|date:"d M Y"|default:"—" }}</div></div>
+        <div><div class="text-xs text-gray-400 mb-0.5">Gudang</div><div class="font-medium">{{ so.warehouse.name|default:"—" }}</div></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900">Item SO</h3></div>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Produk</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Qty Order</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Dikirim</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Sisa</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Harga</th>
+          <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500">Subtotal</th>
+        </tr></thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for item in items %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3"><div class="font-medium text-gray-900">{{ item.product.name }}</div><div class="text-xs font-mono text-gray-400">{{ item.product.sku }}</div></td>
+            <td class="px-4 py-3 text-right font-mono text-sm">{{ item.quantity|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm text-green-600">{{ item.quantity_delivered|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm {% if item.quantity_pending > 0 %}text-amber-600{% else %}text-gray-400{% endif %}">{{ item.quantity_pending|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right text-xs font-mono text-gray-600">{{ item.unit_price|idr }}</td>
+            <td class="px-5 py-3 text-right font-mono font-semibold text-gray-900">{{ item.subtotal|idr }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr class="border-t border-gray-200 bg-gray-50"><td colspan="5" class="px-5 py-3 text-sm font-semibold text-gray-900 text-right">Total</td><td class="px-5 py-3 text-right font-bold text-gray-900">{{ so.total_amount|idr }}</td></tr></tfoot>
+      </table>
+    </div>
+    {% if deliveries %}
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900">Delivery</h3></div>
+      <div class="divide-y divide-gray-50">
+        {% for d in deliveries %}
+        <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition">
+          <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center"><i class="ti ti-truck text-blue-600 text-sm"></i></div>
+          <div class="flex-1"><div class="text-sm font-medium text-gray-900">{{ d.number }}</div><div class="text-xs text-gray-400">{{ d.delivery_date|date:"d M Y"|default:"—" }} · {{ d.warehouse.name }}</div></div>
+          <span class="text-xs px-2 py-0.5 rounded-full border {% if d.status == 'DELIVERED' %}bg-green-50 text-green-700 border-green-200{% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">{{ d.get_status_display }}</span>
+          <a href="{% url 'sales:delivery_detail' d.uid %}" class="text-xs text-nexus-600 hover:text-nexus-700 font-medium">Detail →</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="space-y-4">
+    <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-2">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Aksi</div>
+      {% if so.status == 'DRAFT' %}
+      <form method="post" action="{% url 'sales:so_confirm' so.uid %}">{% csrf_token %}
+        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-check"></i> Konfirmasi SO</button>
+      </form>
+      {% endif %}
+      {% if so.status in 'CONFIRMED,PARTIAL' %}
+      <a href="{% url 'sales:delivery_create' so.uid %}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-truck"></i> Buat Delivery</a>
+      {% endif %}
+      <a href="{% url 'sales:export_so_pdf' so.uid %}"
+         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition">
+        <i class="ti ti-file-type-pdf"></i> Download PDF SO
+      </a>
+      <a href="{% url 'sales:so_list' %}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm transition"><i class="ti ti-arrow-left"></i> Kembali</a>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Info Customer</div>
+      <div class="text-sm font-semibold text-gray-900">{{ so.customer.name }}</div>
+      {% if so.customer.phone %}<div class="text-xs text-gray-400 mt-1">{{ so.customer.phone }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

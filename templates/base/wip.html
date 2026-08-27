@@ -1,0 +1,13 @@
+{% extends "base/base.html" %}
+{% block content %}
+<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+  <div class="w-16 h-16 bg-nexus-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+    <i class="ti ti-tools text-nexus-400 text-3xl"></i>
+  </div>
+  <h2 class="text-lg font-semibold text-gray-900 mb-2">Sedang Dikembangkan</h2>
+  <p class="text-sm text-gray-400">Modul <strong>{{ page_title }}</strong> sedang dalam proses pengembangan.</p>
+  <a href="{% url 'core:dashboard' %}" class="inline-flex items-center gap-2 mt-6 text-sm text-nexus-600 hover:text-nexus-700 font-medium">
+    <i class="ti ti-arrow-left"></i> Kembali ke Dashboard
+  </a>
+</div>
+{% endblock %}

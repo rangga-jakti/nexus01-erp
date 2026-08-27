@@ -1,0 +1,19 @@
+{% for p in products %}
+<div class="flex items-center gap-3 px-3 py-2 hover:bg-nexus-50 cursor-pointer rounded-lg transition"
+     hx-on:click="selectProduct({{ p.pk }}, '{{ p.name }}', '{{ p.sku }}', {{ p.purchase_price }})">
+  <div class="w-7 h-7 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+    <i class="ti ti-box text-gray-400 text-xs"></i>
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-medium text-gray-900 truncate">{{ p.name }}</div>
+    <div class="text-xs text-gray-400 font-mono">{{ p.sku }}</div>
+  </div>
+  <div class="text-xs font-mono text-gray-500 flex-shrink-0">
+    {{ p.total_stock|floatformat:"-2" }} {{ p.unit.symbol|default:"" }}
+  </div>
+</div>
+{% empty %}
+<div class="px-3 py-3 text-xs text-gray-400 text-center">
+  {% if q %}Tidak ada produk "{{ q }}"{% else %}Ketik minimal 2 huruf{% endif %}
+</div>
+{% endfor %}

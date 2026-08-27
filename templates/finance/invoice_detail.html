@@ -1,0 +1,210 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Finance" "Invoice" invoice.number %}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Main -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Invoice header -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-lg font-semibold text-gray-900">{{ invoice.number }}</h2>
+            <span class="text-xs px-2 py-0.5 rounded border {% if invoice.invoice_type == 'SALES' %}bg-green-50 text-green-700 border-green-200{% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+              {% if invoice.invoice_type == 'SALES' %}Invoice Penjualan{% else %}Invoice Pembelian{% endif %}
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+              {% if invoice.status == 'PAID' %}bg-green-50 text-green-700 border-green-200
+              {% elif invoice.status == 'PARTIAL' %}bg-amber-50 text-amber-700 border-amber-200
+              {% elif invoice.status == 'OVERDUE' %}bg-red-50 text-red-700 border-red-200
+              {% elif invoice.status == 'ISSUED' %}bg-blue-50 text-blue-700 border-blue-200
+              {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+              {{ invoice.get_status_display }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500">
+            {% if invoice.customer %}Customer: <strong>{{ invoice.customer.name }}</strong>{% endif %}
+            {% if invoice.supplier %}Supplier: <strong>{{ invoice.supplier.name }}</strong>{% endif %}
+          </p>
+          {% if invoice.supplier_invoice_number %}
+          <p class="text-xs text-gray-400 mt-0.5">No. Invoice Supplier: <span class="font-mono">{{ invoice.supplier_invoice_number }}</span></p>
+          {% endif %}
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-400">Total Invoice</div>
+          <div class="text-2xl font-bold text-gray-900">{{ invoice.total_amount|idr }}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-4 border-t border-gray-100 text-sm">
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Tanggal Invoice</div>
+          <div class="font-medium">{{ invoice.invoice_date|date:"d M Y" }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Jatuh Tempo</div>
+          <div class="font-medium {% if invoice.is_overdue %}text-red-600{% endif %}">
+            {{ invoice.due_date|date:"d M Y"|default:"—" }}
+            {% if invoice.is_overdue %}<span class="text-xs">(Overdue)</span>{% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Sudah Dibayar</div>
+          <div class="font-medium text-green-600">{{ invoice.paid_amount|idr }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">Sisa Tagihan</div>
+          <div class="font-medium {% if invoice.outstanding_amount > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+            {{ invoice.outstanding_amount|idr }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar pembayaran -->
+      {% if invoice.total_amount > 0 %}
+      <div class="mt-4">
+        <div class="flex justify-between text-xs text-gray-400 mb-1">
+          <span>Progress Pembayaran</span>
+          <span>{% widthratio invoice.paid_amount invoice.total_amount 100 %}%</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-2">
+          <div class="bg-green-500 h-2 rounded-full transition-all"
+               style="width: {% widthratio invoice.paid_amount invoice.total_amount 100 %}%"></div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Ringkasan nilai -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Rincian Nilai</h3>
+      </div>
+      <div class="p-5 space-y-3">
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Subtotal</span><span class="font-mono">{{ invoice.subtotal|idr }}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Pajak</span><span class="font-mono">{{ invoice.tax_amount|idr }}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Diskon</span><span class="font-mono text-red-500">-{{ invoice.discount_amount|idr }}</span></div>
+        <div class="flex justify-between text-sm font-semibold border-t border-gray-100 pt-3"><span class="text-gray-900">Total</span><span class="font-mono text-gray-900">{{ invoice.total_amount|idr }}</span></div>
+        <div class="flex justify-between text-sm"><span class="text-gray-500">Sudah Dibayar</span><span class="font-mono text-green-600">{{ invoice.paid_amount|idr }}</span></div>
+        <div class="flex justify-between text-sm font-bold border-t border-gray-200 pt-3">
+          <span class="{% if invoice.outstanding_amount > 0 %}text-red-600{% else %}text-green-600{% endif %}">Sisa Tagihan</span>
+          <span class="font-mono {% if invoice.outstanding_amount > 0 %}text-red-600{% else %}text-green-600{% endif %}">{{ invoice.outstanding_amount|idr }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Riwayat pembayaran -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="text-sm font-semibold text-gray-900">Riwayat Pembayaran</h3>
+      </div>
+      {% if payments %}
+      <div class="divide-y divide-gray-50">
+        {% for pay in payments %}
+        <div class="flex items-center gap-4 px-5 py-3.5">
+          <div class="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ti ti-cash text-green-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium text-gray-900">{{ pay.number }}</div>
+            <div class="text-xs text-gray-400">{{ pay.payment_date|date:"d M Y" }} · {{ pay.get_payment_method_display }}</div>
+            {% if pay.reference_number %}<div class="text-xs text-gray-400 font-mono">Ref: {{ pay.reference_number }}</div>{% endif %}
+          </div>
+          <div class="text-right">
+            <div class="font-mono font-semibold text-green-700">{{ pay.amount|idr }}</div>
+            <span class="text-xs px-2 py-0.5 rounded-full {% if pay.status == 'CONFIRMED' %}bg-green-50 text-green-700{% else %}bg-gray-50 text-gray-500{% endif %}">{{ pay.get_status_display }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-8 text-center text-sm text-gray-400">Belum ada pembayaran.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-4">
+
+    <!-- Catat pembayaran -->
+    {% if invoice.outstanding_amount > 0 and invoice.status != 'CANCELLED' %}
+    <div class="bg-white rounded-xl border border-nexus-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-nexus-100 bg-nexus-50">
+        <h3 class="text-sm font-semibold text-nexus-900">Catat Pembayaran</h3>
+        <p class="text-xs text-nexus-600 mt-0.5">Sisa: {{ invoice.outstanding_amount|idr }}</p>
+      </div>
+      <form method="post" action="{% url 'finance:payment_create' invoice.uid %}" class="p-5 space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Jumlah <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">Rp</span>
+            <input type="number" name="amount" step="1" min="1"
+                   value="{{ invoice.outstanding_amount|floatformat:'0' }}"
+                   class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition font-mono"
+                   required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Metode Bayar</label>
+          <select name="payment_method" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 bg-white">
+            <option value="TRANSFER">Transfer Bank</option>
+            <option value="CASH">Tunai</option>
+            <option value="CHEQUE">Cek/Giro</option>
+            <option value="VIRTUAL_ACCOUNT">Virtual Account</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">No. Referensi</label>
+          <input type="text" name="reference_number" placeholder="No. transfer / bukti bayar"
+                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Catatan</label>
+          <textarea name="notes" rows="2"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition resize-none"></textarea>
+        </div>
+        <button type="submit"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition">
+          <i class="ti ti-cash"></i> Simpan Pembayaran
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Info relasi -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-3">Dokumen Terkait</div>
+      <div class="space-y-2 text-sm">
+        {% if invoice.po %}
+        <a href="{% url 'purchasing:po_detail' invoice.po.uid %}" class="flex items-center gap-2 text-nexus-600 hover:text-nexus-700">
+          <i class="ti ti-clipboard text-xs"></i> {{ invoice.po.number }}
+        </a>
+        {% endif %}
+        {% if invoice.so %}
+        <a href="{% url 'sales:so_detail' invoice.so.uid %}" class="flex items-center gap-2 text-nexus-600 hover:text-nexus-700">
+          <i class="ti ti-receipt text-xs"></i> {{ invoice.so.number }}
+        </a>
+        {% endif %}
+        {% if not invoice.po and not invoice.so %}
+        <span class="text-gray-400 text-xs">Tidak ada dokumen terkait</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <a href="{% url 'finance:export_invoice_pdf' invoice.uid %}"
+       class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl text-sm font-medium transition">
+      <i class="ti ti-file-type-pdf"></i> Download PDF Invoice
+    </a>
+    <a href="{% url 'finance:invoice_list' %}"
+       class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-sm transition">
+      <i class="ti ti-arrow-left"></i> Kembali ke Daftar
+    </a>
+
+  </div>
+</div>
+{% endblock %}

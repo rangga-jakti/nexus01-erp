@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Finance" "Payment" %}{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-100">
+    <h2 class="text-sm font-semibold text-gray-900">Riwayat Pembayaran</h2>
+  </div>
+  {% if payments %}
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-100">
+      <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nomor</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Metode</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jumlah</th>
+      <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
+    </tr></thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for p in payments %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-5 py-3.5 font-medium text-gray-900 font-mono text-xs">{{ p.number }}</td>
+        <td class="px-4 py-3.5">
+          <a href="{% url 'finance:invoice_detail' p.invoice.uid %}" class="text-nexus-600 hover:text-nexus-700 font-medium">{{ p.invoice.number }}</a>
+        </td>
+        <td class="px-4 py-3.5 text-xs text-gray-500">{{ p.get_payment_method_display }}</td>
+        <td class="px-4 py-3.5 text-right font-mono font-semibold text-green-700">{{ p.amount|idr }}</td>
+        <td class="px-4 py-3.5 text-center">
+          <span class="text-xs px-2 py-0.5 rounded-full border {% if p.status == 'CONFIRMED' %}bg-green-50 text-green-700 border-green-200{% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">{{ p.get_status_display }}</span>
+        </td>
+        <td class="px-4 py-3.5 text-right text-xs text-gray-400">{{ p.payment_date|date:"d M Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="py-16 text-center"><i class="ti ti-cash-off text-gray-200 text-5xl mb-3 block"></i><p class="text-sm text-gray-400">Belum ada pembayaran.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

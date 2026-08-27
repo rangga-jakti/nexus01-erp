@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Finance" "Expense" %}{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <div class="bg-white rounded-xl border border-gray-200 px-5 py-3 flex items-center gap-3">
+    <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+      <i class="ti ti-report-money text-orange-600"></i>
+    </div>
+    <div>
+      <div class="text-xs text-gray-400">Total Expense (filter aktif)</div>
+      <div class="text-base font-bold text-gray-900">{{ total|idr }}</div>
+    </div>
+  </div>
+  <a href="{% url 'finance:expense_create' %}"
+     class="inline-flex items-center gap-2 px-4 py-2 bg-nexus-600 hover:bg-nexus-700 text-white text-sm font-medium rounded-lg transition">
+    <i class="ti ti-plus"></i> Catat Expense
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="px-5 py-3 bg-gray-50 border-b border-gray-100">
+    <form method="get" class="flex items-center gap-3 flex-wrap">
+      <select name="category" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Kategori</option>
+        {% for val, label in categories %}
+        <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-nexus-400">
+        <option value="">Semua Status</option>
+        {% for val, label in statuses %}
+        <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="px-4 py-2 bg-nexus-600 text-white text-sm rounded-lg hover:bg-nexus-700 transition">Filter</button>
+      {% if selected_category or selected_status %}
+      <a href="{% url 'finance:expense_list' %}" class="text-xs text-gray-400 hover:text-gray-600"><i class="ti ti-x"></i> Reset</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if expenses %}
+  <table class="w-full text-sm">
+    <thead><tr class="border-b border-gray-100">
+      <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nomor & Judul</th>
+      <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kategori</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jumlah</th>
+      <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+      <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
+    </tr></thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for exp in expenses %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-5 py-3.5">
+          <div class="font-medium text-gray-900">{{ exp.title }}</div>
+          <div class="text-xs font-mono text-gray-400">{{ exp.number }}</div>
+        </td>
+        <td class="px-4 py-3.5">
+          <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{{ exp.get_category_display }}</span>
+        </td>
+        <td class="px-4 py-3.5 text-right font-mono font-semibold text-gray-900">{{ exp.amount|idr }}</td>
+        <td class="px-4 py-3.5 text-center">
+          <span class="text-xs px-2 py-0.5 rounded-full border font-medium
+            {% if exp.status == 'APPROVED' or exp.status == 'PAID' %}bg-green-50 text-green-700 border-green-200
+            {% elif exp.status == 'PENDING' %}bg-amber-50 text-amber-700 border-amber-200
+            {% elif exp.status == 'REJECTED' %}bg-red-50 text-red-600 border-red-200
+            {% else %}bg-gray-50 text-gray-500 border-gray-200{% endif %}">
+            {{ exp.get_status_display }}
+          </span>
+        </td>
+        <td class="px-4 py-3.5 text-right text-xs text-gray-400">{{ exp.expense_date|date:"d M Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="py-16 text-center"><i class="ti ti-report-off text-gray-200 text-5xl mb-3 block"></i><p class="text-sm text-gray-400">Belum ada expense.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

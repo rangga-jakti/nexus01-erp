@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+{% load nexus_tags %}
+{% block breadcrumb %}{% breadcrumb "Sales" "Delivery" "Buat" %}{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+    <i class="ti ti-info-circle mr-1"></i> Delivery dari SO: <strong>{{ so.number }}</strong> — {{ so.customer.name }}
+  </div>
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+    <div class="bg-white rounded-xl border border-gray-200 p-5 grid grid-cols-2 gap-4">
+      <h3 class="col-span-2 text-sm font-semibold text-gray-900 border-b border-gray-100 pb-3">Detail Delivery</h3>
+      {% for field in form %}
+      <div class="{% if field.name in 'notes' %}col-span-2{% endif %}">
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100"><h3 class="text-sm font-semibold text-gray-900">Item Dikirim</h3></div>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-100 bg-gray-50">
+          <th class="text-left px-5 py-2.5 text-xs font-semibold text-gray-500">Produk</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Qty SO</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Sudah Dikirim</th>
+          <th class="text-right px-4 py-2.5 text-xs font-semibold text-gray-500">Sisa</th>
+          <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500">Kirim Sekarang</th>
+        </tr></thead>
+        <tbody class="divide-y divide-gray-50">
+          {% for item in pending_items %}
+          <tr class="hover:bg-gray-50 transition">
+            <td class="px-5 py-3"><div class="font-medium text-gray-900">{{ item.product.name }}</div><div class="text-xs font-mono text-gray-400">{{ item.product.sku }}</div></td>
+            <td class="px-4 py-3 text-right font-mono text-sm text-gray-500">{{ item.quantity|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm text-green-600">{{ item.quantity_delivered|floatformat:"-2" }}</td>
+            <td class="px-4 py-3 text-right font-mono text-sm text-amber-600">{{ item.quantity_pending|floatformat:"-2" }}</td>
+            <td class="px-5 py-3 text-right">
+              <input type="number" name="qty_{{ item.pk }}" step="0.01" min="0" max="{{ item.quantity_pending }}" value="{{ item.quantity_pending }}"
+                     class="w-24 px-3 py-1.5 text-sm text-right border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition font-mono">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="flex justify-between">
+      <a href="{% url 'sales:so_detail' so.uid %}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Batal</a>
+      <button type="submit" class="px-5 py-2 bg-nexus-600 hover:bg-nexus-700 text-white rounded-lg text-sm font-medium transition"><i class="ti ti-check"></i> Buat Delivery</button>
+    </div>
+  </form>
+</div>
+<style>select,input[type=text],input[type=date],textarea{@apply w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nexus-400 transition;}</style>
+{% endblock %}

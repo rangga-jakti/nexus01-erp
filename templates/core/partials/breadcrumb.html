@@ -1,0 +1,13 @@
+{% if items %}
+<nav class="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+  <a href="{% url 'core:dashboard' %}" class="hover:text-gray-600 transition">
+    <i class="ti ti-home text-xs"></i>
+  </a>
+  {% for item in items %}
+  <i class="ti ti-chevron-right text-xs text-gray-300"></i>
+  <span class="{% if forloop.last %}text-gray-700 font-medium{% else %}hover:text-gray-600{% endif %}">
+    {{ item }}
+  </span>
+  {% endfor %}
+</nav>
+{% endif %}
